@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Personalized onboarding
 
-## Getting Started
+A long clinical intake — the kind that runs thirty steps before it shows you anything —
+turned into a short conversation that adapts to what the person actually says.
 
-First, run the development server:
+The demo brand is **Hairo**, a men's hair-loss company. Nothing about the flow is
+specific to hair loss; the brand lives in one file.
+
+## Run it
 
 ```bash
+npm install
+cp .env.example .env    # add your OpenRouter key
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+Two useful scripts:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `npm run llm:check` — asserts the model actually extracts stated facts.
+- `npm run sim` — walks both personas through the API and prints every turn.
 
-## Learn More
+## What to show in a demo
 
-To learn more about Next.js, take a look at the following resources:
+Two paths, both under a minute:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **"Ready to start ASAP"** → three questions, records import, one follow-up written
+   from the imported chart, then the plan. Pick **Liver condition** at the health
+   question to watch a rule hold finasteride for provider review.
+2. **"Exploring options"** → an education card first, then more questions. At any
+   question, type instead of clicking:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   > *It started about two years ago, mostly at the crown, and my dad went bald in his
+   > thirties too*
 
-## Deploy on Vercel
+   One sentence fills three answers, and the header jumps from 1 of 5 to 4 of 5.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Picking **Heart condition** on either path removes oral minoxidil from the plan and
+says why.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## How it works
+
+Two layers, and the split is the whole point:
+
+**The rules decide what may happen.** `lib/flow/rules.js` computes the legal next
+moves from the profile — which questions remain, which clinical flags fire, whether
+a hard stop applies. No model runs here.
+
+**The model picks one and words it.** `lib/flow/engine.js` hands the model that list
+and it chooses a move and writes one acknowledging sentence. Anything not on the list
+is discarded. If the model is slow, wrong or down, the first move is used with
+scripted copy and the onboarding continues — no screen depends on a model call.
+
+So a model can never invent a question, put something in a plan, or clear a clinical
+flag. It decides *what to say next*, not *what is true*.
+
+Two details worth knowing if you extend it:
+
+- **Extraction carries evidence.** Every extracted fact is `{quote, value}`, and a
+  value without a quote from the message is dropped. As bare enums the model invented
+  facts — including worries the person never raised, which the UI then repeated back
+  to them as if they had.
+- **State lives in the client.** Each turn posts the whole state to `/api/turn`, so
+  there is no session store to keep warm and a refresh is a clean start.
+
+## Rebranding it
+
+Edit `lib/brand.js` — name, wordmark style, category, product line, social proof,
+disclaimer. If the palette changes too, the tokens are at the top of
+`app/globals.css`; `DESIGN.md` explains what each one does.
+
+For a different vertical, `lib/flow/questions.js` is the question bank and
+`lib/flow/rules.js` the clinical rules. In a real deployment a clinical team owns
+both files, and the model still may only choose from what they contain.
+
+## Where things are
+
+| Path | What it holds |
+| --- | --- |
+| `lib/brand.js` | The only company-specific file |
+| `lib/flow/questions.js` | Question bank and education cards |
+| `lib/flow/rules.js` | Routing, required slots, clinical flags, progress |
+| `lib/flow/engine.js` | The model calls, each with a deterministic fallback |
+| `lib/flow/plan.js` | Plan, projection, pricing, timeline |
+| `lib/flow/records.js` | The imported-records fixture |
+| `app/api/turn/route.js` | One turn, end to end |
+| `components/` | The patient-facing UI |
+| `DESIGN.md` | Colours, type and layout, with sources |
+| `docs/` | Requirements transcript and reference frames |
+
+## Caveats
+
+It is a demo. The records import is a fixture, the projection is illustrative and
+labelled as such, and the plan says *ready for provider review* rather than
+*approved* — nothing is approved until a clinician looks at it. The connect sheet is
+deliberately generic rather than reproducing a real portal's branding.
