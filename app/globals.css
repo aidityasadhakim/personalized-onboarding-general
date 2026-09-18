@@ -1,0 +1,146 @@
+/* Token layer. Components read var(--token) and never hard-code a value.
+   Values sampled from the reference screens; see DESIGN.md section 2. */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces */
+  --paper: #f8f4ec;
+  --paper-warm: #f4f0e4;
+  --paper-cream: #fcf8f0;
+  --surface: #ffffff;
+  --line: #e4ded0;
+  --line-strong: #cfc6b4;
+
+  /* Ink */
+  --ink: #1c1c18;
+  --ink-soft: #4a463f;
+  --ink-muted: #8a8375;
+
+  /* Accent and meaning */
+  --rust: #9c3818;
+  --rust-tint: #f6eae4;
+  --ready: #38744c;
+  --ready-tint: #e8f1ea;
+  --nurture: #6858c4;
+  --nurture-tint: #efedfa;
+  --olive: #8c9860;
+  --amber: #f8c04a;
+  --chart-plan: #2c5c40;
+  --chart-base: #7fa8be;
+
+  /* Radius */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-pill: 999px;
+
+  /* Elevation */
+  --shadow-card: 0 1px 2px rgba(28, 28, 24, 0.04);
+  --shadow-hover: 0 2px 8px rgba(28, 28, 24, 0.06);
+  --shadow-raised: 0 4px 16px rgba(28, 28, 24, 0.08);
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --d-state: 150ms;
+  --d-enter: 250ms;
+  --d-draw: 900ms;
+
+  /* Layout */
+  --column: min(680px, 100% - 32px);
+  --column-wide: min(760px, 100% - 32px);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 400;
+  color: var(--ink);
+  margin: 0;
+}
+
+h1 {
+  font-size: 34px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--rust);
+}
+
+button {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--rust);
+  outline-offset: 2px;
+}
+
+/* Shared primitives */
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.caption {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+
+.wordmark {
+  font-family: var(--font-display), Georgia, serif;
+  font-style: italic;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  color: var(--rust);
+  text-transform: lowercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
