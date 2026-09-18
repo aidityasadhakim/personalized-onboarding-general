@@ -39,6 +39,9 @@ export default function Onboarding() {
         setStep(data.step);
         setAck(data.ack ?? "");
         setMeta(data.meta ?? null);
+        // The selection tint lives until the next question lands, so it stays lit
+        // while the turn is in flight.
+        setPicked(null);
       } catch (error) {
         console.error("[turn] failed", error);
       } finally {
@@ -48,9 +51,11 @@ export default function Onboarding() {
     [state],
   );
 
-  // First paint: no model call, so the demo opens instantly.
+  // First paint: no model call, so the demo opens instantly. Deferred a tick so the
+  // first render is the shell rather than one cascading out of this effect.
   useEffect(() => {
-    send({ type: "start" });
+    const id = setTimeout(() => send({ type: "start" }), 0);
+    return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -69,11 +74,6 @@ export default function Onboarding() {
     },
     [busy, send, step],
   );
-
-  // Clear the selection tint once the next question arrives.
-  useEffect(() => {
-    setPicked(null);
-  }, [step?.id]);
 
   // Number keys pick an option, so a live demo never fumbles for the mouse.
   useEffect(() => {
@@ -204,6 +204,8 @@ export default function Onboarding() {
                 <form className={styles.textRow} onSubmit={submitText}>
                   <input
                     className={styles.textInput}
+                    name="answer"
+                    id="answer"
                     value={text}
                     onChange={(event) => setText(event.target.value)}
                     placeholder="…or tell me in your own words"
