@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "llm:check": "node --env-file=.env scripts/llm-check.mjs"
+    "llm:check": "node --env-file=.env scripts/llm-check.mjs",
+    "sim": "node scripts/flow-sim.mjs"
   },
   "dependencies": {
     "@openrouter/ai-sdk-provider": "^3.0.0",
