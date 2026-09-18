@@ -13,11 +13,13 @@ import { decideTurn, extractFacts, recordFollowup, renderMove } from "@/lib/flow
 import { factsFromRecords } from "@/lib/flow/records";
 import { QUESTIONS } from "@/lib/flow/questions";
 import {
+  canUpgradeIntent,
   clinicalFlags,
   nextMoves,
   planPreview,
   progress,
   requiredSlots,
+  routeOf,
   slotFilled,
 } from "@/lib/flow/rules";
 
@@ -63,23 +65,29 @@ async function applyInput(state, input) {
     const before = requiredSlots(state.profile).filter((s) => slotFilled(state.profile, s));
     const { facts, concerns, degraded } = await extractFacts(input.text);
 
+    const routeBefore = routeOf(state.profile);
+
     for (const [slot, value] of Object.entries(facts)) {
       if (slot === "priorTreatments") {
         state.profile.priorTreatments = value;
         continue;
       }
+      // Readiness is the one answer a later message may overwrite, and only upwards.
+      const upgrade = slot === "intent" && canUpgradeIntent(state.profile.intent?.value, value.value);
       // A typed answer beats a guess, but never overwrites something they picked.
-      if (!slotFilled(state.profile, slot) || state.profile[slot]?.source === "records") {
+      if (!slotFilled(state.profile, slot) || state.profile[slot]?.source === "records" || upgrade) {
         state.profile[slot] = value;
       }
     }
+
+    const promoted = routeBefore === "nurture" && routeOf(state.profile) === "ready";
     if (concerns?.length) {
       state.profile.concerns = [...new Set([...(state.profile.concerns ?? []), ...concerns])];
     }
 
     const after = requiredSlots(state.profile).filter((s) => slotFilled(state.profile, s));
     const filled = after.filter((s) => !before.includes(s));
-    return { filled, said: input.text, degraded };
+    return { filled, said: input.text, degraded, promoted };
   }
 
   return { filled: [], said: "", degraded: false };
@@ -151,6 +159,8 @@ export async function POST(request) {
       degraded,
       ms: Date.now() - started,
       progress: progress(state),
+      // Set on the one turn where a typed answer moved someone onto the fast lane.
+      promoted: applied.promoted ?? false,
       // Only while the conversation is still running — once the plan is on screen the
       // preview would just be a worse copy of it.
       planPreview: needsPlan || move.kind === "done" ? [] : planPreview(state),

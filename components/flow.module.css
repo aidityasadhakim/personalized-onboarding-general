@@ -702,6 +702,30 @@
   animation: rise var(--d-enter) var(--ease) both;
 }
 
+.promoted {
+  background: var(--paper-warm);
+  color: var(--rust);
+  margin-right: 8px;
+}
+
+/* The offer, when it sits on the plan card instead of its own screen */
+
+.offer {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.offerHead {
+  margin-bottom: 18px;
+}
+
+.offerSub {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
 /* Plan preview — the plan assembling while the questions are still going */
 
 .preview {

@@ -126,7 +126,11 @@ export default function Onboarding() {
         ) : null}
       </header>
 
-      <main className={`${styles.column} ${step?.kind === "paywall" ? styles.wide : ""}`}>
+      <main
+        className={`${styles.column} ${
+          step?.kind === "paywall" || step?.withPricing ? styles.wide : ""
+        }`}
+      >
         {history.length > 0 ? (
           <div className={styles.history}>
             {history.map((row, index) =>
@@ -158,6 +162,15 @@ export default function Onboarding() {
 
             {/* The whole pitch in one line: answering in your own words removes
                 questions instead of adding them. */}
+            {/* Readiness stated mid-conversation moves them to the short route, and
+                saying so is the point — the flow visibly reacted to them. */}
+            {meta?.promoted ? (
+              <p className={`${styles.skipped} ${styles.promoted}`}>
+                <span aria-hidden="true">→</span>
+                You sound ready, so I am taking you the short way.
+              </p>
+            ) : null}
+
             {meta?.skipped > 0 ? (
               <p className={styles.skipped}>
                 <span aria-hidden="true">✓</span>
@@ -255,6 +268,8 @@ export default function Onboarding() {
             ) : step.kind === "plan" ? (
               <PlanStep
                 plan={step.plan}
+                withPricing={step.withPricing}
+                onCheckout={(tier) => setCheckout(tier)}
                 onContinue={() => send({ type: "continue" }, null)}
               />
             ) : step.kind === "paywall" ? (

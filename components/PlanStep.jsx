@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { brand } from "@/lib/brand";
+import PricingTiers from "./PricingTiers";
 import ProjectionChart from "./ProjectionChart";
 import styles from "./flow.module.css";
 
@@ -21,7 +22,7 @@ function useCountdown(minutes) {
  * headline says "ready for provider review" rather than "approved" — nothing is
  * approved until a clinician looks at it.
  */
-export default function PlanStep({ plan, onContinue }) {
+export default function PlanStep({ plan, onContinue, withPricing, onCheckout }) {
   const held = useCountdown(plan.holdMinutes);
 
   return (
@@ -92,9 +93,22 @@ export default function PlanStep({ plan, onContinue }) {
           {brand.disclaimer}
         </p>
 
-        <button type="button" className={styles.primary} onClick={onContinue}>
-          See my options →
-        </button>
+        {withPricing ? (
+          <div className={styles.offer}>
+            <div className={styles.offerHead}>
+              <span className="label">Start when you are ready</span>
+              <p className={styles.offerSub}>
+                Every term includes the provider review, unlimited follow-ups and free
+                shipping. Cancel any time.
+              </p>
+            </div>
+            <PricingTiers plan={plan} onCheckout={onCheckout} />
+          </div>
+        ) : (
+          <button type="button" className={styles.primary} onClick={onContinue}>
+            See my options →
+          </button>
+        )}
       </div>
     </div>
   );
