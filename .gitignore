@@ -42,3 +42,4 @@ next-env.d.ts
 
 # local media (source video extractions, not needed in the repo)
 /media/
+!.env.example
