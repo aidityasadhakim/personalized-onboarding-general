@@ -33,6 +33,15 @@ const CURRENT_NOTES = [
   { tag: "Today", title: "Intent collected", body: "Same five chips. The answer is stored, then set aside." },
   { tag: "Issue 01 · 02", title: "Context, then a generic guess", body: "A dense brand profile arrives first, followed by a starter plan that ignores the chips." },
   { tag: "Issue 03 · 04", title: "The gate lands mid-read", body: "“Hire Helena” is the only saturated element on screen, and it names the commitment." },
+  { tag: "Outcome", title: "A trial started on a promise", body: "The user commits before any finished output, and the plan they get is still the generic one. Compare the Proposed flow, where the reveal of real drafts is the trial start." },
+];
+
+// Today's gate fires on a timer while the first output is still being read.
+const CURRENT_GATE_DELAY = 3000;
+const STARTER_PLAN = [
+  "Draft 14 days of LinkedIn posts to launch your social presence",
+  "Write 10 X posts to seed the brand in the SaaS growth community",
+  "Create 3 LinkedIn carousel scripts",
 ];
 
 function HelenaAvatar() {
@@ -327,17 +336,36 @@ function ProposedFlow({ data, variant, onStep }) {
   );
 }
 
-function CurrentFlow({ data, screen }) {
+function CurrentFlow({ data, screen, onScreen }) {
+  const [intents, setIntents] = useState([]);
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (screen !== 1) return;
+    const t = setTimeout(() => onScreen(2), CURRENT_GATE_DELAY);
+    return () => clearTimeout(t);
+  }, [screen, onScreen]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el && screen === 3) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, [screen]);
+
   if (screen === 0) {
     return (
       <AppShell channel="Welcome">
-        <IntentPicker intents={data.intents} selected={["seo", "content"]} onToggle={() => {}} onContinue={() => {}} />
+        <IntentPicker
+          intents={data.intents}
+          selected={intents}
+          onToggle={(id) => setIntents((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))}
+          onContinue={() => onScreen(1)}
+        />
       </AppShell>
     );
   }
   return (
     <div className="relative h-full">
-      <AppShell>
+      <AppShell scrollRef={scrollRef}>
         <HelenaSays>
           Great info. Enrich Labs is an AI marketing agent, bold blue brand, very clean positioning. I&apos;ve saved the core files.
           <div className="mt-2.5 rounded-xl border border-[#e6e3f0] p-3.5 text-[12px] leading-relaxed text-[#55516a]">
@@ -354,20 +382,39 @@ function CurrentFlow({ data, screen }) {
         <HelenaSays>
           Here&apos;s your starter plan:
           <ul className="mt-2 divide-y divide-[#f0eef6] rounded-xl border border-[#e6e3f0] text-[12.5px]">
-            {["Draft 14 days of LinkedIn posts to launch your social presence", "Write 10 X posts to seed the brand in the SaaS growth community", "Create 3 LinkedIn carousel scripts"].map((t) => (
-              <li key={t} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
-                {t} <span className="text-[#b0acc2]">+</span>
+            {STARTER_PLAN.map((t) => (
+              <li key={t}>
+                <button
+                  type="button"
+                  onClick={() => screen === 1 && onScreen(2)}
+                  className="flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left hover:bg-[#f7f6fc]"
+                >
+                  {t} <span className="text-[#b0acc2]">+</span>
+                </button>
               </li>
             ))}
           </ul>
         </HelenaSays>
+        {screen === 3 && (
+          <HelenaSays>
+            <span className="mb-2 flex w-fit items-center gap-1.5 rounded-full bg-[#eef7f1] px-2.5 py-1 text-[12px] font-medium text-[#2f7a4f]">
+              <CheckCircleIcon size={14} weight="fill" /> Trial started · 3 days free
+            </span>
+            Welcome aboard! I&apos;ll start on your 14 days of LinkedIn posts.
+          </HelenaSays>
+        )}
       </AppShell>
       {screen === 2 && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0c0b12]/85 px-6 text-center">
+        <div className="rise-in absolute inset-0 flex flex-col items-center justify-center bg-[#0c0b12]/85 px-6 text-center">
           <p className="text-[17px] font-semibold text-white">Hire your first autonomous AI marketer today.</p>
-          <span className="mt-4 rounded-lg px-6 py-2 text-[14px] font-medium text-white" style={{ background: "#2f6bff" }}>
+          <button
+            type="button"
+            onClick={() => onScreen(3)}
+            className="mt-4 rounded-lg px-6 py-2 text-[14px] font-medium text-white hover:brightness-110"
+            style={{ background: "#2f6bff" }}
+          >
             Hire Helena
-          </span>
+          </button>
           <p className="mt-3 text-[12px] font-medium text-white/80">3-day free trial</p>
           <p className="text-[12px] text-white/50">Works while you sleep.</p>
         </div>
@@ -450,13 +497,13 @@ export default function HelenaPrototype({ data, url, height = 560, className }) 
             {mode === "proposed" ? (
               <ProposedFlow key={`${variant}-${nonce}`} data={data} variant={variant} onStep={setStep} />
             ) : (
-              <CurrentFlow data={data} screen={screen} />
+              <CurrentFlow key={nonce} data={data} screen={screen} onScreen={setScreen} />
             )}
           </div>
         </WindowFrame>
       </div>
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3">
         <div className="flex items-center gap-1.5" aria-label="Progress">
           {(mode === "proposed" ? PROPOSED_STEPS : CURRENT_NOTES).map((_, i) => (
             <span
@@ -468,15 +515,6 @@ export default function HelenaPrototype({ data, url, height = 560, className }) 
             />
           ))}
         </div>
-        {mode === "current" && (
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => setScreen((s) => (s + 1) % CURRENT_NOTES.length)}
-          >
-            {screen === CURRENT_NOTES.length - 1 ? "Start over" : "Next screen"}
-          </Button>
-        )}
       </div>
 
       {note && <Note note={note} />}
