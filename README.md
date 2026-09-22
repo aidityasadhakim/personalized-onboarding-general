@@ -68,7 +68,7 @@ Two details worth knowing if you extend it:
 
 Edit `lib/brand.js` — name, wordmark style, category, product line, social proof,
 disclaimer. If the palette changes too, the tokens are at the top of
-`app/globals.css`; `DESIGN.md` explains what each one does.
+`app/(onboarding)/globals.css`; `DESIGN.md` explains what each one does.
 
 For a different vertical, `lib/flow/questions.js` is the question bank and
 `lib/flow/rules.js` the clinical rules. In a real deployment a clinical team owns

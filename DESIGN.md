@@ -11,7 +11,7 @@ The visual system for the personalized onboarding demo. Derived from the Hims ho
 Two files decide everything company-specific:
 
 - `lib/brand.js` — name, wordmark style, palette overrides, product names, pricing, legal/disclaimer copy.
-- `app/globals.css` — the token layer. Brand overrides set the same custom properties on `:root`.
+- `app/(onboarding)/globals.css` — the token layer. Brand overrides set the same custom properties on `:root`.
 
 A component may never contain: a company name, a drug brand name, a price, or a hex code. If a screen needs one, it reads it from the brand config. Renaming the demo for the next prospect must be a one-file edit.
 
@@ -236,7 +236,7 @@ Second person, short sentences, no exclamation marks, no emoji. The assistant ac
 
 ## 9. Implementation notes
 
-- Tokens live in `app/globals.css` under `:root`; components use `var(--token)` only.
+- Tokens live in `app/(onboarding)/globals.css` under `:root`; components use `var(--token)` only.
 - Fonts via `next/font/google` in `app/layout.js`, exposed as `--font-display` and `--font-ui`.
 - Component styles as CSS Modules next to each component. No CSS-in-JS, no Tailwind — a token file is easier to hand to a company's designer.
 - Charts are hand-written SVG in `components/charts/`, driven by a plan object, so the same component serves hair loss, weight loss or testosterone.
