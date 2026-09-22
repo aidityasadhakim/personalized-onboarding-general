@@ -58,7 +58,7 @@ function Header({ report, run, sidebarOpen, onToggleSidebar, onRestart }) {
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b border-kumo-hairline bg-kumo-canvas/80 px-4 backdrop-blur sm:px-5">
-      <Link href="/teardown" className="shrink-0" onClick={onRestart} aria-label="Funnel OS home">
+      <Link href="/" className="shrink-0" onClick={onRestart} aria-label="Funnel OS home">
         <Wordmark />
       </Link>
 

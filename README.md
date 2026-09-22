@@ -14,7 +14,13 @@ cp .env.example .env    # add your OpenRouter key
 npm run dev
 ```
 
-Then open http://localhost:3000.
+Then open http://localhost:3000/hairo.
+
+The site root (http://localhost:3000) is a separate mockup, the **Funnel OS teardown
+console**: paste a URL, watch a scripted teardown of Enrich Labs, and chat through the
+findings. Its finished report is at `/teardown/enrichlabs` and the shareable
+first-run prototype at `/teardown/enrichlabs/prototype`. It lives in
+`app/(funnel-os)` with its own root layout; the Hairo demo is in `app/(onboarding)`.
 
 Two useful scripts:
 

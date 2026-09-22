@@ -1,6 +1,6 @@
-import TeardownConsole from "@/components/teardown/TeardownConsole";
-import { defaultReport } from "@/lib/teardown/reports";
+import { permanentRedirect } from "next/navigation";
 
-export default function NewTeardownPage() {
-  return <TeardownConsole report={defaultReport} start="idle" />;
+/* The console used to start here; it now lives at the site root. */
+export default function TeardownIndex() {
+  permanentRedirect("/");
 }
