@@ -88,16 +88,18 @@ function Header({ report, run, sidebarOpen, onToggleSidebar, onRestart }) {
 
       <div className="ml-auto flex items-center gap-2">
         <span className="hidden sm:block">{status}</span>
-        <Button
-          variant={sidebarOpen ? "ghost" : "secondary"}
-          size="sm"
-          shape="square"
-          icon={<SidebarSimpleIcon size={16} className="-scale-x-100" weight={sidebarOpen ? "fill" : "regular"} />}
-          aria-label={sidebarOpen ? "Hide details" : "Show details"}
-          aria-pressed={sidebarOpen}
-          title={sidebarOpen ? "Hide details" : "Show details"}
-          onClick={onToggleSidebar}
-        />
+        {run.phase !== "idle" && (
+          <Button
+            variant={sidebarOpen ? "ghost" : "secondary"}
+            size="sm"
+            shape="square"
+            icon={<SidebarSimpleIcon size={16} className="-scale-x-100" weight={sidebarOpen ? "fill" : "regular"} />}
+            aria-label={sidebarOpen ? "Hide details" : "Show details"}
+            aria-pressed={sidebarOpen}
+            title={sidebarOpen ? "Hide details" : "Show details"}
+            onClick={onToggleSidebar}
+          />
+        )}
         <span className="flex size-7 items-center justify-center rounded-full bg-kumo-contrast text-[11px] font-medium text-white" aria-label="Signed in as CW">
           CW
         </span>
@@ -113,7 +115,8 @@ export default function TeardownConsole({ report, start = "idle" }) {
   const [tab, setTab] = useState(start === "done" ? "analysis" : "workflow");
   const [focus, setFocus] = useState(null);
   const [width, setWidth] = useState(SIDEBAR_DEFAULT);
-  const [collapsed, setCollapsed] = useState(false);
+  // Nothing to show before a URL is in, so the start screen opens without it.
+  const [collapsed, setCollapsed] = useState(start === "idle");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const replyTimer = useRef(null);
@@ -165,6 +168,7 @@ export default function TeardownConsole({ report, start = "idle" }) {
     dispatch({ type: "start", url: host });
     setTab("workflow");
     setFocus(null);
+    setCollapsed(false);
   }
 
   function restart() {
@@ -173,6 +177,8 @@ export default function TeardownConsole({ report, start = "idle" }) {
     dispatch({ type: "reset" });
     setTab("workflow");
     setFocus(null);
+    setCollapsed(true);
+    setMobileOpen(false);
   }
 
   const panelProps = { report, run, focus, onOpen: openTab, onAsk: send, onRestart: restart };
