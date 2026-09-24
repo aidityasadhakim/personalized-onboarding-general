@@ -121,7 +121,7 @@ function Idea({ report, id, onOpen }) {
           From {idea.from} · score {idea.score} · 3 mockups · run-length estimate
         </p>
       </div>
-      <OpenButton onClick={() => onOpen("ideas", idea.id)}>Open card</OpenButton>
+      <OpenButton onClick={() => onOpen("setup", idea.id)}>Open card</OpenButton>
     </Card>
   );
 }

@@ -10,14 +10,28 @@ import { Wordmark } from "./ui";
 import Sidebar, { SIDEBAR_DEFAULT, clampWidth } from "./Sidebar";
 import Chat from "./chat/Chat";
 import StartHero from "./chat/StartHero";
-import ProfilePanel from "./panels/ProfilePanel";
-import WorkflowPanel from "./panels/WorkflowPanel";
 import JourneyPanel from "./panels/JourneyPanel";
+import DataPanel from "./panels/DataPanel";
+import CompetitorsPanel from "./panels/CompetitorsPanel";
 import AnalysisPanel from "./panels/AnalysisPanel";
 import IdeasPanel from "./panels/IdeasPanel";
+import SetupPanel from "./panels/SetupPanel";
 import OnboardingPanel from "./panels/OnboardingPanel";
+import WorkflowPanel from "./panels/WorkflowPanel";
 
 const PROTOTYPE_WIDTH = 640;
+
+/* The line under each stage's views: when it was last refreshed, or the last
+   test that ran. */
+function stageMeta(report, run) {
+  if (run.phase !== "done") return null;
+  const t = report.lastTestRun;
+  return {
+    context: `Last refreshed ${report.capturedAt}`,
+    ideas: `Last refreshed ${report.capturedAt}`,
+    test: `Last test run: ${t.card} ${t.result} ${t.metric} · ${t.date}`,
+  };
+}
 
 function runReducer(state, action) {
   switch (action.type) {
@@ -112,7 +126,12 @@ export default function TeardownConsole({ report, start = "idle" }) {
   const [run, dispatch] = useReducer(runReducer, null, () =>
     start === "done" ? completedState(report) : initialRunState(),
   );
-  const [tab, setTab] = useState(start === "done" ? "analysis" : "workflow");
+  const [tab, setTab] = useState(start === "done" ? "journey" : "workflow");
+  // Roadmap order and card statuses, shared by the Roadmap and Setup views.
+  const [ideas, setIdeas] = useState(() => ({
+    order: report.ideas.map((i) => i.id),
+    statuses: Object.fromEntries(report.ideas.map((i) => [i.id, i.status])),
+  }));
   const [focus, setFocus] = useState(null);
   const [width, setWidth] = useState(SIDEBAR_DEFAULT);
   // Nothing to show before a URL is in, so the start screen opens without it.
@@ -182,6 +201,7 @@ export default function TeardownConsole({ report, start = "idle" }) {
   }
 
   const panelProps = { report, run, focus, onOpen: openTab, onAsk: send, onRestart: restart };
+  const ideaProps = { ideas, onIdeasChange: setIdeas };
   const captureStarted = run.captured.length > 0;
 
   return (
@@ -218,6 +238,7 @@ export default function TeardownConsole({ report, start = "idle" }) {
               width={width}
               onWidthChange={setWidth}
               tab={tab}
+              meta={stageMeta(report, run)}
               onTabChange={(t) => {
                 setTab(t);
                 setFocus(null);
@@ -228,23 +249,29 @@ export default function TeardownConsole({ report, start = "idle" }) {
             >
               {/* Panels stay mounted so decisions (approvals, sources, wins)
                   survive switching tabs; only the active one is visible. */}
-              <div hidden={tab !== "profile"}>
-                <ProfilePanel {...panelProps} ready={captureStarted} />
-              </div>
-              <div hidden={tab !== "workflow"}>
-                <WorkflowPanel {...panelProps} />
-              </div>
               <div hidden={tab !== "journey"}>
                 <JourneyPanel {...panelProps} focus={tab === "journey" ? focus : null} />
+              </div>
+              <div hidden={tab !== "data"}>
+                <DataPanel {...panelProps} ready={captureStarted} />
+              </div>
+              <div hidden={tab !== "competitors"}>
+                <CompetitorsPanel {...panelProps} ready={captureStarted} />
               </div>
               <div hidden={tab !== "analysis"}>
                 <AnalysisPanel {...panelProps} focus={tab === "analysis" ? focus : null} />
               </div>
               <div hidden={tab !== "ideas"}>
-                <IdeasPanel {...panelProps} />
+                <IdeasPanel {...panelProps} {...ideaProps} />
+              </div>
+              <div hidden={tab !== "setup"}>
+                <SetupPanel {...panelProps} {...ideaProps} />
               </div>
               <div hidden={tab !== "onboarding"}>
                 <OnboardingPanel {...panelProps} />
+              </div>
+              <div hidden={tab !== "workflow"}>
+                <WorkflowPanel {...panelProps} />
               </div>
             </Sidebar>
           </div>

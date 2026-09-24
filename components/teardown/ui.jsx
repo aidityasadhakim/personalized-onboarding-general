@@ -68,6 +68,16 @@ export function StageIcon({ status }) {
   return <span className="size-5 shrink-0 rounded-full border-[1.5px] border-dashed border-kumo-line" />;
 }
 
+/* Idea card statuses, shared by the roadmap and the test setup. */
+export const IDEA_STATUS = {
+  shipped: { label: "Shipped", variant: "success" },
+  review: { label: "In review", variant: "warning" },
+  drafted: { label: "Drafted", variant: "neutral" },
+  launched: { label: "Launched", variant: "success" },
+  revising: { label: "Revising", variant: "info" },
+  passed: { label: "Passed", variant: "neutral" },
+};
+
 /* A browser-style frame for captured screens and prototypes. */
 export function WindowFrame({ title, children, className, bodyClassName }) {
   return (

@@ -7,8 +7,11 @@ import { Button, Dialog, Empty, Loader, cn } from "@cloudflare/kumo";
 import { CameraIcon, ChatCircleIcon, CurrencyDollarIcon, XIcon } from "@phosphor-icons/react";
 import { PanelIntro, PanelSection } from "../ui";
 
-export default function JourneyPanel({ report, run, focus, onAsk }) {
+export default function JourneyPanel({ report, run, focus, onAsk, onOpen }) {
   const [zoom, setZoom] = useState(null);
+  // Red dots mark the steps where the analysis found an issue.
+  const issuesFor = (step) =>
+    run.stages.analysis === "done" ? (step.issues ?? []).map((id) => report.issues.find((i) => i.id === id)) : [];
   const captured = report.journey.filter((s) => run.captured.includes(s.id));
   const next = report.journey.find((s) => !run.captured.includes(s.id));
 
@@ -39,8 +42,24 @@ export default function JourneyPanel({ report, run, focus, onAsk }) {
       </PanelIntro>
 
       <PanelSection className="grid gap-6 @container">
-        {captured.map((s) => (
-          <article key={s.id} id={`journey-${s.id}`} className="rise-in scroll-mt-4">
+        {captured.map((s) => {
+          const issues = issuesFor(s);
+          return (
+          <article key={s.id} id={`journey-${s.id}`} className="rise-in relative scroll-mt-4">
+            {issues.length > 0 && (
+              <button
+                type="button"
+                onClick={() => onOpen("analysis", issues[0].id)}
+                aria-label={`${issues.length} issues on ${s.title}: open in Issues`}
+                className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5 rounded-full bg-ember py-1 pr-2.5 pl-2 text-xs font-medium text-white shadow-[0_2px_8px_rgb(200_85_43/0.35)] hover:brightness-110"
+              >
+                <span className="relative flex size-2">
+                  <span className="absolute inset-0 animate-ping rounded-full bg-white/70" />
+                  <span className="relative size-2 rounded-full bg-white" />
+                </span>
+                {issues.length} {issues.length === 1 ? "issue" : "issues"}
+              </button>
+            )}
             {s.image ? (
               <button
                 type="button"
@@ -71,8 +90,28 @@ export default function JourneyPanel({ report, run, focus, onAsk }) {
                 Ask
               </Button>
             </div>
+            {issues.length > 0 && (
+              <ul className="mt-2.5 flex flex-col gap-1 pl-8">
+                {issues.map((issue) => (
+                  <li key={issue.id}>
+                    <button
+                      type="button"
+                      onClick={() => onOpen("analysis", issue.id)}
+                      className="flex w-full items-start gap-2 rounded-md px-2 py-1 text-left text-sm hover:bg-kumo-tint"
+                    >
+                      <span className="mt-1.5 size-2 shrink-0 rounded-full bg-ember" aria-hidden="true" />
+                      <span className="min-w-0 flex-1 text-kumo-default">
+                        <span className="text-kumo-subtle">Issue {issue.n} · </span>
+                        {issue.title}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </article>
-        ))}
+          );
+        })}
 
         {next && run.phase === "running" && (
           <div className={cn("flex aspect-[322/120] items-center justify-center gap-2.5 rounded-xl border border-dashed border-kumo-line text-sm text-kumo-subtle")}>

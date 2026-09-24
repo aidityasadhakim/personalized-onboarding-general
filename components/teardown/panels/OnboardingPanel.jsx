@@ -33,7 +33,8 @@ export default function OnboardingPanel({ report, run }) {
   return (
     <>
       <PanelIntro title={<>A first run built for <em>{report.profile.name}</em></>}>
-        Gather the need, deliver one real win, then ask. Pick an intent and click through.
+        Gather the need, deliver one real win, then ask. Pick an intent and click through. Generated from{" "}
+        {report.library.matched} matched experiments in the library.
       </PanelIntro>
       <div className="flex flex-wrap gap-2 px-5 pb-4">
         <Button

@@ -1,25 +1,47 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Tabs, cn } from "@cloudflare/kumo";
 import {
-  BuildingsIcon,
-  FlowArrowIcon,
   CameraIcon,
   ChartLineUpIcon,
+  ClockCounterClockwiseIcon,
+  DatabaseIcon,
+  FlaskIcon,
+  FlowArrowIcon,
   LightbulbIcon,
-  SparkleIcon,
+  ListNumbersIcon,
+  RocketLaunchIcon,
   SidebarSimpleIcon,
+  SparkleIcon,
+  StackIcon,
+  UsersThreeIcon,
 } from "@phosphor-icons/react";
 
+/* Every view the sidebar can show. Tab values are what the chat and panels
+   pass to onOpen, so they stay stable even when labels change. */
 export const SIDEBAR_TABS = [
-  { value: "profile", label: "Profile", icon: BuildingsIcon },
-  { value: "workflow", label: "Workflow", icon: FlowArrowIcon },
   { value: "journey", label: "Journey", icon: CameraIcon },
-  { value: "analysis", label: "Analysis", icon: ChartLineUpIcon },
-  { value: "ideas", label: "Ideas", icon: LightbulbIcon },
-  { value: "onboarding", label: "Onboarding", icon: SparkleIcon },
+  { value: "data", label: "Data", icon: DatabaseIcon },
+  { value: "competitors", label: "Competitors", icon: UsersThreeIcon },
+  { value: "analysis", label: "Issues", icon: ChartLineUpIcon },
+  { value: "ideas", label: "Roadmap", icon: ListNumbersIcon },
+  { value: "setup", label: "Setup", icon: FlaskIcon },
+  { value: "onboarding", label: "Prototype", icon: SparkleIcon },
+  { value: "workflow", label: "Workflow", icon: FlowArrowIcon },
 ];
+
+/* The views grouped into the growth workflow a solo PM runs: build the
+   context, turn issues into a ranked roadmap, then set up and launch a test.
+   Workflow is the run log, so it sits last. */
+export const SIDEBAR_STAGES = [
+  { value: "context", n: 1, label: "Context", icon: StackIcon, tabs: ["journey", "data", "competitors"] },
+  { value: "ideas", n: 2, label: "Issues & ideas", icon: LightbulbIcon, tabs: ["analysis", "ideas"] },
+  { value: "test", n: 3, label: "Test", icon: RocketLaunchIcon, tabs: ["setup", "onboarding"] },
+  { value: "workflow", label: "Workflow", icon: FlowArrowIcon, tabs: ["workflow"] },
+];
+
+export const stageOf = (tab) => SIDEBAR_STAGES.find((s) => s.tabs.includes(tab)) ?? SIDEBAR_STAGES[0];
 
 export const SIDEBAR_MIN = 340;
 export const SIDEBAR_DEFAULT = 460;
@@ -27,13 +49,17 @@ const SIDEBAR_MAX = 980;
 const maxWidth = () => Math.min(Math.round(window.innerWidth * 0.64), SIDEBAR_MAX);
 export const clampWidth = (w) => Math.max(SIDEBAR_MIN, Math.min(maxWidth(), Math.round(w)));
 
-/* Below this width only the active tab keeps its label; the rest are icons. */
+/* Below this width Workflow, when inactive, shows only its icon. */
 const FULL_LABELS_AT = 640;
 
-export default function Sidebar({ width, onWidthChange, tab, onTabChange, onCollapse, mobile, hidden, children }) {
+export default function Sidebar({ width, onWidthChange, tab, onTabChange, meta, onCollapse, mobile, hidden, children }) {
   const dragging = useRef(false);
   const body = useRef(null);
   const compact = !mobile && width < FULL_LABELS_AT;
+  const stage = stageOf(tab);
+  // The view last open in each stage, so switching stages comes back to it.
+  const [lastView, setLastView] = useState({});
+  if (lastView[stage.value] !== tab) setLastView((v) => ({ ...v, [stage.value]: tab }));
 
   // Each tab opens at its top.
   useEffect(() => {
@@ -67,18 +93,46 @@ export default function Sidebar({ width, onWidthChange, tab, onTabChange, onColl
     e.preventDefault();
   }
 
-  const tabs = SIDEBAR_TABS.map(({ value, label, icon: Icon }) => {
-    const showLabel = !compact || value === tab;
+  const stageTabs = SIDEBAR_STAGES.map(({ value, n, label, icon: Icon }) => {
+    const active = value === stage.value;
+    // The numbered stages always keep their names; only Workflow folds to an icon.
+    const showLabel = !compact || active || n;
     return {
       value,
       label: (
-        <span className="flex items-center gap-1.5" title={label}>
-          <Icon size={15} weight={value === tab ? "fill" : "regular"} aria-hidden="true" />
+        <span className="flex items-center gap-1.5" title={n ? `${n}. ${label}` : label}>
+          {n ? (
+            <span
+              className={cn(
+                "flex size-4 items-center justify-center rounded-full text-[10px] font-medium",
+                active ? "bg-kumo-contrast text-white" : "bg-kumo-recessed text-kumo-subtle",
+              )}
+              aria-hidden="true"
+            >
+              {n}
+            </span>
+          ) : (
+            <Icon size={15} weight={active ? "fill" : "regular"} aria-hidden="true" />
+          )}
           {showLabel ? <span>{label}</span> : <span className="sr-only">{label}</span>}
         </span>
       ),
     };
   });
+
+  const viewTabs = stage.tabs.map((value) => {
+    const { label, icon: Icon } = SIDEBAR_TABS.find((t) => t.value === value);
+    return {
+      value,
+      label: (
+        <span className="flex items-center gap-1.5">
+          <Icon size={13} weight={value === tab ? "fill" : "regular"} aria-hidden="true" />
+          {label}
+        </span>
+      ),
+    };
+  });
+  const stageMeta = meta?.[stage.value];
 
   return (
     <aside
@@ -116,9 +170,12 @@ export default function Sidebar({ width, onWidthChange, tab, onTabChange, onColl
         <Tabs
           variant="underline"
           size="sm"
-          tabs={tabs}
-          value={tab}
-          onValueChange={onTabChange}
+          tabs={stageTabs}
+          value={stage.value}
+          onValueChange={(v) => {
+            const next = SIDEBAR_STAGES.find((s) => s.value === v);
+            onTabChange(lastView[v] ?? next.tabs[0]);
+          }}
           className="min-w-0 flex-1"
           listClassName="h-12 gap-1 overflow-x-auto [scrollbar-width:none]"
         />
@@ -132,6 +189,20 @@ export default function Sidebar({ width, onWidthChange, tab, onTabChange, onColl
           onClick={onCollapse}
         />
       </div>
+
+      {(viewTabs.length > 1 || stageMeta) && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-kumo-hairline px-3 py-2">
+          {viewTabs.length > 1 && (
+            <Tabs variant="segmented" size="sm" tabs={viewTabs} value={tab} onValueChange={onTabChange} />
+          )}
+          {stageMeta && (
+            <span className="ml-auto flex items-center gap-1.5 text-xs text-kumo-subtle">
+              <ClockCounterClockwiseIcon size={13} aria-hidden="true" />
+              {stageMeta}
+            </span>
+          )}
+        </div>
+      )}
 
       <div ref={body} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {children}
