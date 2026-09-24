@@ -17,7 +17,7 @@ export default function JourneyPanel({ report, run, focus, onAsk, onOpen }) {
 
   useEffect(() => {
     if (!focus) return;
-    // After the sidebar resets its scroll for the tab change.
+    // After the console resets its scroll for the view change.
     const id = requestAnimationFrame(() =>
       document.getElementById(`journey-${focus}`)?.scrollIntoView({ behavior: "smooth", block: "start" }),
     );
@@ -41,7 +41,8 @@ export default function JourneyPanel({ report, run, focus, onAsk, onOpen }) {
         {captured.length} of {report.journey.length} steps captured, from the landing page to pricing.
       </PanelIntro>
 
-      <PanelSection className="grid gap-6 @container">
+      <PanelSection className="@container">
+        <div className="grid gap-6 @xl:grid-cols-2">
         {captured.map((s) => {
           const issues = issuesFor(s);
           return (
@@ -118,6 +119,7 @@ export default function JourneyPanel({ report, run, focus, onAsk, onOpen }) {
             <Loader size="sm" /> Capturing {next.title.toLowerCase()}…
           </div>
         )}
+        </div>
       </PanelSection>
 
       <Dialog.Root open={!!zoom} onOpenChange={(o) => !o && setZoom(null)}>

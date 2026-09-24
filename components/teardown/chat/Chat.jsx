@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Loader } from "@cloudflare/kumo";
 import { ArrowUpIcon } from "@phosphor-icons/react";
 import { Mark } from "../ui";
-import { SIDEBAR_TABS } from "../Sidebar";
+import { CONSOLE_TABS } from "../ConsoleView";
 import Attachment from "./attachments";
 
 /* Reveals an agent reply a couple of words at a time, then its cards. */
@@ -72,7 +72,7 @@ export default function Chat({ report, run, pending, tab, suggestions, onSend, o
   const stick = useRef(true);
   const [draft, setDraft] = useState("");
   const running = run.phase === "running";
-  const tabMeta = SIDEBAR_TABS.find((t) => t.value === tab);
+  const tabMeta = CONSOLE_TABS.find((t) => t.value === tab);
 
   // Follow new content unless the reader has scrolled up to look at something.
   const settle = useCallback(() => {
@@ -99,13 +99,10 @@ export default function Chat({ report, run, pending, tab, suggestions, onSend, o
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div ref={scroller} onScroll={onScroll} className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-2xl flex-col gap-7 px-4 pt-10 pb-8 sm:px-6">
-          <header className="mb-2">
-            <p className="text-xs text-kumo-subtle">Teardown · {report.url}</p>
-            <h1 className="mt-1 font-display text-[34px] leading-tight text-kumo-strong">
-              {report.profile.name}
-            </h1>
-          </header>
+        <div className="flex flex-col gap-6 px-4 pt-5 pb-8">
+          <p className="text-xs text-kumo-subtle">
+            {report.profile.name} · {report.url}. Ask for a change or a question; answers open in the console.
+          </p>
 
           {run.messages.map((m) =>
             m.role === "user" ? (
@@ -118,8 +115,8 @@ export default function Chat({ report, run, pending, tab, suggestions, onSend, o
         </div>
       </div>
 
-      <div className="relative px-4 pb-4 before:pointer-events-none before:absolute before:inset-x-0 before:-top-10 before:h-10 before:bg-linear-to-t before:from-kumo-canvas before:to-transparent sm:px-6 sm:pb-6">
-        <div className="mx-auto max-w-2xl">
+      <div className="relative px-3 pb-3 before:pointer-events-none before:absolute before:inset-x-0 before:-top-10 before:h-10 before:bg-linear-to-t before:from-kumo-canvas before:to-transparent">
+        <div>
           {running ? (
             <div className="flex items-center justify-between gap-3 rounded-2xl bg-kumo-base px-4 py-3 ring-1 ring-kumo-hairline">
               <span className="flex items-center gap-2.5 text-sm text-kumo-subtle">
@@ -160,7 +157,7 @@ export default function Chat({ report, run, pending, tab, suggestions, onSend, o
                   }}
                   rows={1}
                   aria-label="Ask the teardown"
-                  placeholder="Ask about the capture, an issue, or the onboarding…"
+                  placeholder="Ask for a change or a question…"
                   className="field-sizing-content max-h-40 min-h-11 w-full resize-none bg-transparent px-2.5 pt-2 text-[15px] text-kumo-strong outline-none placeholder:text-kumo-placeholder"
                 />
                 <div className="flex items-center justify-between gap-2 pl-1.5">

@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Badge, Button, DropdownMenu, Toasty, TooltipProvider } from "@cloudflare/kumo";
-import { CaretDownIcon, CheckIcon, PlusIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
+import { CaretDownIcon, ChatCircleIcon, CheckIcon, PlusIcon } from "@phosphor-icons/react";
 import { applyEvent, buildTimeline, completedState, initialRunState, messageId } from "@/lib/teardown/timeline";
 import { replyTo, suggestionsFor } from "@/lib/teardown/replies";
 import { Wordmark } from "./ui";
-import Sidebar, { SIDEBAR_DEFAULT, clampWidth } from "./Sidebar";
+import Sidebar, { SIDEBAR_DEFAULT } from "./Sidebar";
+import ConsoleView from "./ConsoleView";
 import Chat from "./chat/Chat";
 import StartHero from "./chat/StartHero";
 import JourneyPanel from "./panels/JourneyPanel";
@@ -18,8 +19,6 @@ import IdeasPanel from "./panels/IdeasPanel";
 import SetupPanel from "./panels/SetupPanel";
 import OnboardingPanel from "./panels/OnboardingPanel";
 import WorkflowPanel from "./panels/WorkflowPanel";
-
-const PROTOTYPE_WIDTH = 640;
 
 /* The line under each stage's views: when it was last refreshed, or the last
    test that ran. */
@@ -62,7 +61,7 @@ function subscribeMobile(cb) {
 const useIsMobile = () =>
   useSyncExternalStore(subscribeMobile, () => window.matchMedia(mobileQuery).matches, () => false);
 
-function Header({ report, run, sidebarOpen, onToggleSidebar, onRestart }) {
+function Header({ report, run, chatOpen, onToggleChat, onRestart }) {
   const status =
     run.phase === "done" ? (
       <Badge variant="success" appearance="dot">Teardown complete</Badge>
@@ -104,14 +103,14 @@ function Header({ report, run, sidebarOpen, onToggleSidebar, onRestart }) {
         <span className="hidden sm:block">{status}</span>
         {run.phase !== "idle" && (
           <Button
-            variant={sidebarOpen ? "ghost" : "secondary"}
+            variant={chatOpen ? "ghost" : "secondary"}
             size="sm"
             shape="square"
-            icon={<SidebarSimpleIcon size={16} className="-scale-x-100" weight={sidebarOpen ? "fill" : "regular"} />}
-            aria-label={sidebarOpen ? "Hide details" : "Show details"}
-            aria-pressed={sidebarOpen}
-            title={sidebarOpen ? "Hide details" : "Show details"}
-            onClick={onToggleSidebar}
+            icon={<ChatCircleIcon size={16} weight={chatOpen ? "fill" : "regular"} />}
+            aria-label={chatOpen ? "Hide chat" : "Show chat"}
+            aria-pressed={chatOpen}
+            title={chatOpen ? "Hide chat" : "Show chat"}
+            onClick={onToggleChat}
           />
         )}
         <span className="flex size-7 items-center justify-center rounded-full bg-kumo-contrast text-[11px] font-medium text-white" aria-label="Signed in as CW">
@@ -134,13 +133,12 @@ export default function TeardownConsole({ report, start = "idle" }) {
   }));
   const [focus, setFocus] = useState(null);
   const [width, setWidth] = useState(SIDEBAR_DEFAULT);
-  // Nothing to show before a URL is in, so the start screen opens without it.
-  const [collapsed, setCollapsed] = useState(start === "idle");
+  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const replyTimer = useRef(null);
   const isMobile = useIsMobile();
-  const sidebarOpen = isMobile ? mobileOpen : !collapsed;
+  const chatOpen = isMobile ? mobileOpen : !collapsed;
 
   const timeline = useMemo(() => (run.url ? buildTimeline(report, run.url) : []), [report, run.url]);
 
@@ -154,16 +152,11 @@ export default function TeardownConsole({ report, start = "idle" }) {
 
   useEffect(() => () => clearTimeout(replyTimer.current), []);
 
-  function showSidebar() {
-    if (isMobile) setMobileOpen(true);
-    else setCollapsed(false);
-  }
-
   function openTab(next, focusId = null) {
     setTab(next);
     setFocus(focusId);
-    showSidebar();
-    if (next === "onboarding" && !isMobile) setWidth((w) => Math.max(w, clampWidth(PROTOTYPE_WIDTH)));
+    // On phones the chat covers the console, so step aside to show the view.
+    setMobileOpen(false);
   }
 
   function send(text) {
@@ -174,7 +167,7 @@ export default function TeardownConsole({ report, start = "idle" }) {
       const reply = replyTo(text, report, tab);
       dispatch({ type: "say", message: { role: "agent", stream: true, text: reply.text, attachments: reply.attachments } });
       setPending(false);
-      if (reply.tab && !isMobile) {
+      if (reply.tab) {
         // An answer about one issue opens that issue, not just the tab.
         const issue = reply.tab === "analysis" && reply.attachments?.find((a) => a.type === "issue");
         setTab(reply.tab);
@@ -187,7 +180,6 @@ export default function TeardownConsole({ report, start = "idle" }) {
     dispatch({ type: "start", url: host });
     setTab("workflow");
     setFocus(null);
-    setCollapsed(false);
   }
 
   function restart() {
@@ -196,7 +188,6 @@ export default function TeardownConsole({ report, start = "idle" }) {
     dispatch({ type: "reset" });
     setTab("workflow");
     setFocus(null);
-    setCollapsed(true);
     setMobileOpen(false);
   }
 
@@ -211,8 +202,8 @@ export default function TeardownConsole({ report, start = "idle" }) {
           <Header
             report={report}
             run={run}
-            sidebarOpen={sidebarOpen}
-            onToggleSidebar={() => (isMobile ? setMobileOpen((o) => !o) : setCollapsed((c) => !c))}
+            chatOpen={chatOpen}
+            onToggleChat={() => (isMobile ? setMobileOpen((o) => !o) : setCollapsed((c) => !c))}
             onRestart={restart}
           />
           <div className="flex min-h-0 flex-1">
@@ -220,35 +211,16 @@ export default function TeardownConsole({ report, start = "idle" }) {
               {run.phase === "idle" ? (
                 <StartHero report={report} onRun={startRun} />
               ) : (
-                <Chat
-                  report={report}
-                  run={run}
-                  pending={pending}
+                <ConsoleView
                   tab={tab}
-                  suggestions={run.phase === "done" && !pending ? suggestionsFor[tab] : []}
-                  onSend={send}
-                  onOpen={openTab}
-                  onSkip={() => dispatch({ type: "skip", events: timeline })}
-                />
-              )}
-            </main>
-
-            <Sidebar
-              hidden={!sidebarOpen}
-              width={width}
-              onWidthChange={setWidth}
-              tab={tab}
-              meta={stageMeta(report, run)}
-              onTabChange={(t) => {
-                setTab(t);
-                setFocus(null);
-                if (t === "onboarding" && !isMobile) setWidth((w) => Math.max(w, clampWidth(PROTOTYPE_WIDTH)));
-              }}
-              onCollapse={() => (isMobile ? setMobileOpen(false) : setCollapsed(true))}
-              mobile={isMobile}
-            >
-              {/* Panels stay mounted so decisions (approvals, sources, wins)
-                  survive switching tabs; only the active one is visible. */}
+                  meta={stageMeta(report, run)}
+                  onTabChange={(t) => {
+                    setTab(t);
+                    setFocus(null);
+                  }}
+                >
+                  {/* Panels stay mounted so decisions (approvals, sources, wins)
+                      survive switching views; only the active one is visible. */}
               <div hidden={tab !== "journey"}>
                 <JourneyPanel {...panelProps} focus={tab === "journey" ? focus : null} />
               </div>
@@ -273,7 +245,30 @@ export default function TeardownConsole({ report, start = "idle" }) {
               <div hidden={tab !== "workflow"}>
                 <WorkflowPanel {...panelProps} />
               </div>
-            </Sidebar>
+                </ConsoleView>
+              )}
+            </main>
+
+            {run.phase !== "idle" && (
+              <Sidebar
+                hidden={!chatOpen}
+                width={width}
+                onWidthChange={setWidth}
+                onCollapse={() => (isMobile ? setMobileOpen(false) : setCollapsed(true))}
+                mobile={isMobile}
+              >
+                <Chat
+                  report={report}
+                  run={run}
+                  pending={pending}
+                  tab={tab}
+                  suggestions={run.phase === "done" && !pending ? suggestionsFor[tab] : []}
+                  onSend={send}
+                  onOpen={openTab}
+                  onSkip={() => dispatch({ type: "skip", events: timeline })}
+                />
+              </Sidebar>
+            )}
           </div>
         </div>
       </TooltipProvider>

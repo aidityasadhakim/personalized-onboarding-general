@@ -7,9 +7,9 @@ import { Button, Meter, cn } from "@cloudflare/kumo";
 import { ArrowUpRightIcon, SparkleIcon } from "@phosphor-icons/react";
 import { WindowFrame } from "../ui";
 
-/* Cards the agent drops into the chat. Each one can open its sidebar tab. */
+/* Cards the agent drops into the chat. Each one can open its console view. */
 
-function OpenButton({ onClick, children = "Open in sidebar" }) {
+function OpenButton({ onClick, children = "Open in console" }) {
   return (
     <Button variant="ghost" size="xs" onClick={onClick} className="text-kumo-subtle">
       {children}
@@ -29,8 +29,8 @@ function Card({ children, className }) {
 function Captures({ report, onOpen }) {
   const shots = report.journey.filter((s) => s.image);
   return (
-    <Card className="p-3">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <Card className="@container p-3">
+      <div className="grid grid-cols-2 gap-2 @xl:grid-cols-4">
         {shots.map((s) => (
           <button
             key={s.id}
@@ -65,8 +65,8 @@ export const toneClass = {
 
 function Funnel({ report, onOpen }) {
   return (
-    <Card className="p-4">
-      <div className="grid gap-3 sm:grid-cols-2">
+    <Card className="@container p-4">
+      <div className="grid gap-3 @md:grid-cols-2">
         {report.funnel.map((f) => (
           <Meter
             key={f.stage}
@@ -88,21 +88,23 @@ function Issue({ report, id, onOpen }) {
   const issue = report.issues.find((i) => i.id === id);
   if (!issue) return null;
   return (
-    <Card className="flex gap-4 p-3">
-      <img
-        src={issue.image}
-        alt=""
-        className="hidden h-20 w-32 shrink-0 rounded-md object-cover object-top ring-1 ring-kumo-hairline sm:block"
-      />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="rounded-md bg-ember-tint px-1.5 py-0.5 text-xs font-medium text-ember">Issue {issue.n}</span>
-          <span className="text-xs text-kumo-subtle">{issue.stage}</span>
+    <Card className="@container p-3">
+      <div className="flex gap-4">
+        <img
+          src={issue.image}
+          alt=""
+          className="hidden h-20 w-32 shrink-0 rounded-md object-cover object-top ring-1 ring-kumo-hairline @lg:block"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="rounded-md bg-ember-tint px-1.5 py-0.5 text-xs font-medium text-ember">Issue {issue.n}</span>
+            <span className="text-xs text-kumo-subtle">{issue.stage}</span>
+          </div>
+          <p className="mt-1.5 text-sm font-medium text-kumo-strong">{issue.title}</p>
+          <p className="mt-0.5 line-clamp-2 text-sm text-kumo-subtle">{issue.fix}</p>
         </div>
-        <p className="mt-1.5 text-sm font-medium text-kumo-strong">{issue.title}</p>
-        <p className="mt-0.5 line-clamp-2 text-sm text-kumo-subtle">{issue.fix}</p>
       </div>
-      <div className="self-end">
+      <div className="mt-2 flex justify-end">
         <OpenButton onClick={() => onOpen("analysis", issue.id)} />
       </div>
     </Card>
@@ -113,15 +115,15 @@ function Idea({ report, id, onOpen }) {
   const idea = report.ideas.find((i) => i.id === id);
   if (!idea) return null;
   return (
-    <Card className="flex items-center gap-4 p-4">
-      <span className="font-display text-2xl text-kumo-strong">{idea.id}</span>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-kumo-strong">{idea.title}</p>
-        <p className="text-xs text-kumo-subtle">
-          From {idea.from} · score {idea.score} · 3 mockups · run-length estimate
-        </p>
+    <Card className="p-4">
+      <p className="font-mono text-xs text-kumo-subtle">{idea.id}</p>
+      <p className="mt-1 text-sm font-medium text-kumo-strong">{idea.title}</p>
+      <p className="text-xs text-kumo-subtle">
+        From {idea.from} · score {idea.score} · 3 mockups · run-length estimate
+      </p>
+      <div className="mt-2 flex justify-end">
+        <OpenButton onClick={() => onOpen("setup", idea.id)}>Open card</OpenButton>
       </div>
-      <OpenButton onClick={() => onOpen("setup", idea.id)}>Open card</OpenButton>
     </Card>
   );
 }
@@ -129,18 +131,15 @@ function Idea({ report, id, onOpen }) {
 function Prototype({ report, onOpen }) {
   return (
     <button type="button" onClick={() => onOpen("onboarding")} className="group block w-full text-left">
-      <WindowFrame title={`${report.url} · proposed first run`} bodyClassName="warm-wash px-6 py-6">
-        <div className="flex items-center gap-4">
-          <span className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-[#f08a5d] to-[#d9532c] text-white">
-            <SparkleIcon size={18} weight="fill" />
+      <WindowFrame title={`${report.url} · proposed first run`} bodyClassName="warm-wash p-4">
+        <div className="flex items-start gap-3">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#f08a5d] to-[#d9532c] text-white">
+            <SparkleIcon size={15} weight="fill" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="font-display text-xl leading-tight text-kumo-strong">What&apos;s the one win you want first?</p>
-            <p className="mt-1 text-sm text-kumo-subtle">Need → first win → then the ask. Click through it in the sidebar.</p>
+            <p className="font-display text-lg leading-tight text-kumo-strong">What&apos;s the one win you want first?</p>
+            <p className="mt-1 text-sm text-kumo-subtle">Need → first win → then the ask. Try it in the console.</p>
           </div>
-          <span className="hidden rounded-lg bg-kumo-contrast px-3 py-1.5 text-sm text-white group-hover:bg-kumo-brand-hover sm:block">
-            Try it
-          </span>
         </div>
       </WindowFrame>
     </button>
