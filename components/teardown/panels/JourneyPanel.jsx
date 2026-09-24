@@ -42,7 +42,7 @@ export default function JourneyPanel({ report, run, focus, onAsk, onOpen }) {
       </PanelIntro>
 
       <PanelSection className="@container">
-        <div className="grid gap-6 @xl:grid-cols-2">
+        <div className="grid gap-6 @xl:grid-cols-2 @4xl:grid-cols-3">
         {captured.map((s) => {
           const issues = issuesFor(s);
           return (

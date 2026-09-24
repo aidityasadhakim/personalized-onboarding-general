@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Badge, Button, DropdownMenu, Toasty, TooltipProvider } from "@cloudflare/kumo";
-import { CaretDownIcon, ChatCircleIcon, CheckIcon, PlusIcon } from "@phosphor-icons/react";
+import { CaretDownIcon, ChatCircleIcon, CheckIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import { applyEvent, buildTimeline, completedState, initialRunState, messageId } from "@/lib/teardown/timeline";
 import { replyTo, suggestionsFor } from "@/lib/teardown/replies";
 import { Wordmark } from "./ui";
@@ -61,63 +61,66 @@ function subscribeMobile(cb) {
 const useIsMobile = () =>
   useSyncExternalStore(subscribeMobile, () => window.matchMedia(mobileQuery).matches, () => false);
 
-function Header({ report, run, chatOpen, onToggleChat, onRestart }) {
-  const status =
-    run.phase === "done" ? (
-      <Badge variant="success" appearance="dot">Teardown complete</Badge>
-    ) : run.phase === "running" ? (
-      <Badge variant="warning" appearance="dot">Running</Badge>
-    ) : null;
+function Avatar() {
+  return (
+    <span className="flex size-7 items-center justify-center rounded-full bg-kumo-contrast text-[11px] font-medium text-white" aria-label="Signed in as CW">
+      CW
+    </span>
+  );
+}
 
+/* The start screen's header. Once a run starts, the wordmark moves to the top
+   of the chat column and the status to the console toolbar. */
+function Header() {
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b border-kumo-hairline bg-kumo-canvas/80 px-4 backdrop-blur sm:px-5">
+      <Link href="/" className="shrink-0" aria-label="Funnel OS home">
+        <Wordmark />
+      </Link>
+      <div className="ml-auto">
+        <Avatar />
+      </div>
+    </header>
+  );
+}
+
+function ChatHeader({ report, onRestart, mobile, onClose }) {
+  return (
+    <div className="flex h-14 shrink-0 items-center gap-2 px-4">
       <Link href="/" className="shrink-0" onClick={onRestart} aria-label="Funnel OS home">
         <Wordmark />
       </Link>
-
-      {run.phase !== "idle" && (
-        <>
-          <span className="h-5 w-px bg-kumo-line" aria-hidden="true" />
-          <DropdownMenu>
-            <DropdownMenu.Trigger
-              render={(p) => (
-                <Button {...p} variant="ghost" size="sm" className="gap-1.5">
-                  {report.profile.name}
-                  <CaretDownIcon size={12} className="text-kumo-subtle" />
-                </Button>
-              )}
-            />
-            <DropdownMenu.Content>
-              <DropdownMenu.Item icon={<CheckIcon size={14} />}>
-                {report.profile.name} · {report.url}
-              </DropdownMenu.Item>
-              <DropdownMenu.Item icon={<PlusIcon size={14} />} onClick={onRestart}>
-                New teardown
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu>
-        </>
+      <span className="h-5 w-px bg-kumo-line" aria-hidden="true" />
+      <DropdownMenu>
+        <DropdownMenu.Trigger
+          render={(p) => (
+            <Button {...p} variant="ghost" size="sm" className="min-w-0 gap-1.5">
+              <span className="truncate">{report.profile.name}</span>
+              <CaretDownIcon size={12} className="shrink-0 text-kumo-subtle" />
+            </Button>
+          )}
+        />
+        <DropdownMenu.Content>
+          <DropdownMenu.Item icon={<CheckIcon size={14} />}>
+            {report.profile.name} · {report.url}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item icon={<PlusIcon size={14} />} onClick={onRestart}>
+            New teardown
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu>
+      {mobile && (
+        <Button
+          variant="ghost"
+          size="sm"
+          shape="square"
+          className="ml-auto"
+          icon={<XIcon size={16} />}
+          aria-label="Back to the console"
+          onClick={onClose}
+        />
       )}
-
-      <div className="ml-auto flex items-center gap-2">
-        <span className="hidden sm:block">{status}</span>
-        {run.phase !== "idle" && (
-          <Button
-            variant={chatOpen ? "ghost" : "secondary"}
-            size="sm"
-            shape="square"
-            icon={<ChatCircleIcon size={16} weight={chatOpen ? "fill" : "regular"} />}
-            aria-label={chatOpen ? "Hide chat" : "Show chat"}
-            aria-pressed={chatOpen}
-            title={chatOpen ? "Hide chat" : "Show chat"}
-            onClick={onToggleChat}
-          />
-        )}
-        <span className="flex size-7 items-center justify-center rounded-full bg-kumo-contrast text-[11px] font-medium text-white" aria-label="Signed in as CW">
-          CW
-        </span>
-      </div>
-    </header>
+    </div>
   );
 }
 
@@ -133,12 +136,11 @@ export default function TeardownConsole({ report, start = "idle" }) {
   }));
   const [focus, setFocus] = useState(null);
   const [width, setWidth] = useState(SIDEBAR_DEFAULT);
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  // Phones show one surface at a time; the chat opens as a sheet.
+  const [mobileChat, setMobileChat] = useState(false);
   const [pending, setPending] = useState(false);
   const replyTimer = useRef(null);
   const isMobile = useIsMobile();
-  const chatOpen = isMobile ? mobileOpen : !collapsed;
 
   const timeline = useMemo(() => (run.url ? buildTimeline(report, run.url) : []), [report, run.url]);
 
@@ -167,7 +169,7 @@ export default function TeardownConsole({ report, start = "idle" }) {
     setTab(next);
     setFocus(focusId);
     // On phones the chat covers the console, so step aside to show the view.
-    setMobileOpen(false);
+    setMobileChat(false);
   }
 
   function send(text) {
@@ -199,88 +201,115 @@ export default function TeardownConsole({ report, start = "idle" }) {
     dispatch({ type: "reset" });
     setTab("workflow");
     setFocus(null);
-    setMobileOpen(false);
+    setMobileChat(false);
   }
 
   const panelProps = { report, run, focus, onOpen: openTab, onAsk: send, onRestart: restart };
   const ideaProps = { ideas, onIdeasChange: setIdeas };
   const captureStarted = run.captured.length > 0;
 
+  if (run.phase === "idle") {
+    return (
+      <Toasty>
+        <TooltipProvider>
+          <div className="flex h-dvh flex-col bg-kumo-canvas">
+            <Header />
+            <main className="min-h-0 flex-1">
+              <StartHero report={report} onRun={startRun} />
+            </main>
+          </div>
+        </TooltipProvider>
+      </Toasty>
+    );
+  }
+
+  const status =
+    run.phase === "done" ? (
+      <Badge variant="success" appearance="dot">Teardown complete</Badge>
+    ) : (
+      <Badge variant="warning" appearance="dot">Running</Badge>
+    );
+
   return (
     <Toasty>
       <TooltipProvider>
-        <div className="flex h-dvh flex-col bg-kumo-canvas">
-          <Header
-            report={report}
-            run={run}
-            chatOpen={chatOpen}
-            onToggleChat={() => (isMobile ? setMobileOpen((o) => !o) : setCollapsed((c) => !c))}
-            onRestart={restart}
-          />
-          <div className="flex min-h-0 flex-1">
-            <main className="min-w-0 flex-1">
-              {run.phase === "idle" ? (
-                <StartHero report={report} onRun={startRun} />
-              ) : (
-                <ConsoleView
-                  tab={tab}
-                  meta={stageMeta(report, run)}
-                  onTabChange={(t) => {
-                    setTab(t);
-                    setFocus(null);
-                  }}
-                >
-                  {/* Panels stay mounted so decisions (approvals, sources, wins)
-                      survive switching views; only the active one is visible. */}
-              <div hidden={tab !== "journey"}>
-                <JourneyPanel {...panelProps} focus={tab === "journey" ? focus : null} />
-              </div>
-              <div hidden={tab !== "data"}>
-                <DataPanel {...panelProps} ready={captureStarted} />
-              </div>
-              <div hidden={tab !== "competitors"}>
-                <CompetitorsPanel {...panelProps} ready={captureStarted} />
-              </div>
-              <div hidden={tab !== "analysis"}>
-                <AnalysisPanel {...panelProps} focus={tab === "analysis" ? focus : null} />
-              </div>
-              <div hidden={tab !== "ideas"}>
-                <IdeasPanel {...panelProps} {...ideaProps} />
-              </div>
-              <div hidden={tab !== "setup"}>
-                <SetupPanel {...panelProps} {...ideaProps} />
-              </div>
-              <div hidden={tab !== "onboarding"}>
-                <OnboardingPanel {...panelProps} />
-              </div>
-              <div hidden={tab !== "workflow"}>
-                <WorkflowPanel {...panelProps} />
-              </div>
-                </ConsoleView>
-              )}
-            </main>
+        <div className="flex h-dvh bg-kumo-canvas">
+          <Sidebar
+            hidden={isMobile && !mobileChat}
+            width={width}
+            onWidthChange={setWidth}
+            mobile={isMobile}
+            header={<ChatHeader report={report} onRestart={restart} mobile={isMobile} onClose={() => setMobileChat(false)} />}
+          >
+            <Chat
+              report={report}
+              run={run}
+              pending={pending}
+              tab={tab}
+              suggestions={run.phase === "done" && !pending ? suggestionsFor[tab] : []}
+              onSend={send}
+              onOpen={openTab}
+              onSkip={() => dispatch({ type: "skip", events: timeline })}
+            />
+          </Sidebar>
 
-            {run.phase !== "idle" && (
-              <Sidebar
-                hidden={!chatOpen}
-                width={width}
-                onWidthChange={setWidth}
-                onCollapse={() => (isMobile ? setMobileOpen(false) : setCollapsed(true))}
-                mobile={isMobile}
+          {/* The console is the main surface: an inset pane beside the chat,
+              like the preview in AI Studio or Lovable. */}
+          <main className="min-w-0 flex-1 md:py-2 md:pr-2">
+            <div className="h-full overflow-hidden bg-kumo-base md:rounded-xl md:shadow-[0_1px_2px_rgb(40_30_20/0.05)] md:ring-1 md:ring-kumo-hairline">
+              <ConsoleView
+                tab={tab}
+                meta={stageMeta(report, run)}
+                onTabChange={(t) => {
+                  setTab(t);
+                  setFocus(null);
+                }}
+                actions={
+                  <>
+                    <span className="hidden lg:block">{status}</span>
+                    {isMobile && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        shape="square"
+                        icon={<ChatCircleIcon size={16} />}
+                        aria-label="Open chat"
+                        onClick={() => setMobileChat(true)}
+                      />
+                    )}
+                    <Avatar />
+                  </>
+                }
               >
-                <Chat
-                  report={report}
-                  run={run}
-                  pending={pending}
-                  tab={tab}
-                  suggestions={run.phase === "done" && !pending ? suggestionsFor[tab] : []}
-                  onSend={send}
-                  onOpen={openTab}
-                  onSkip={() => dispatch({ type: "skip", events: timeline })}
-                />
-              </Sidebar>
-            )}
-          </div>
+                {/* Panels stay mounted so decisions (approvals, sources, wins)
+                    survive switching views; only the active one is visible. */}
+                <div hidden={tab !== "journey"}>
+                  <JourneyPanel {...panelProps} focus={tab === "journey" ? focus : null} />
+                </div>
+                <div hidden={tab !== "data"}>
+                  <DataPanel {...panelProps} ready={captureStarted} />
+                </div>
+                <div hidden={tab !== "competitors"}>
+                  <CompetitorsPanel {...panelProps} ready={captureStarted} />
+                </div>
+                <div hidden={tab !== "analysis"}>
+                  <AnalysisPanel {...panelProps} focus={tab === "analysis" ? focus : null} />
+                </div>
+                <div hidden={tab !== "ideas"}>
+                  <IdeasPanel {...panelProps} {...ideaProps} />
+                </div>
+                <div hidden={tab !== "setup"}>
+                  <SetupPanel {...panelProps} {...ideaProps} />
+                </div>
+                <div hidden={tab !== "onboarding"}>
+                  <OnboardingPanel {...panelProps} />
+                </div>
+                <div hidden={tab !== "workflow"}>
+                  <WorkflowPanel {...panelProps} />
+                </div>
+              </ConsoleView>
+            </div>
+          </main>
         </div>
       </TooltipProvider>
     </Toasty>

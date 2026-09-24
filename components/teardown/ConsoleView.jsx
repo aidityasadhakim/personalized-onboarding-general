@@ -43,7 +43,7 @@ export const CONSOLE_STAGES = [
 const stageOf = (tab) => CONSOLE_STAGES.find((s) => s.tabs.includes(tab)) ?? CONSOLE_STAGES[0];
 
 /* The main surface: stage tabs, the stage's views, and the active panel. */
-export default function ConsoleView({ tab, onTabChange, meta, children }) {
+export default function ConsoleView({ tab, onTabChange, meta, actions, children }) {
   const body = useRef(null);
   const stage = stageOf(tab);
   // The view last open in each stage, so switching stages comes back to it.
@@ -81,7 +81,7 @@ export default function ConsoleView({ tab, onTabChange, meta, children }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center gap-3 border-b border-kumo-hairline bg-kumo-base px-4 sm:px-5">
+      <div className="flex items-center gap-3 border-b border-kumo-hairline px-3 sm:px-4">
         <Tabs
           variant="underline"
           size="sm"
@@ -89,23 +89,18 @@ export default function ConsoleView({ tab, onTabChange, meta, children }) {
           value={stage.value}
           onValueChange={(v) => onTabChange(lastView[v] ?? CONSOLE_STAGES.find((s) => s.value === v).tabs[0])}
           className="min-w-0 flex-1"
-          listClassName="h-12 gap-1 overflow-x-auto [scrollbar-width:none]"
+          listClassName="h-12 gap-1 overflow-x-auto border-b-0 [scrollbar-width:none]"
         />
-        {stageMeta && (
-          <span className="hidden shrink-0 items-center gap-1.5 text-xs text-kumo-subtle md:flex">
-            <ClockCounterClockwiseIcon size={13} aria-hidden="true" />
-            {stageMeta}
-          </span>
-        )}
+        {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
       </div>
 
       {(viewTabs.length > 1 || stageMeta) && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-kumo-hairline bg-kumo-base px-4 py-2 sm:px-5 md:[&>.meta]:hidden">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-kumo-hairline px-3 py-2 sm:px-4">
           {viewTabs.length > 1 && (
             <Tabs variant="segmented" size="sm" tabs={viewTabs} value={tab} onValueChange={onTabChange} />
           )}
           {stageMeta && (
-            <span className="meta ml-auto flex items-center gap-1.5 text-xs text-kumo-subtle">
+            <span className="ml-auto flex items-center gap-1.5 text-xs text-kumo-subtle">
               <ClockCounterClockwiseIcon size={13} aria-hidden="true" />
               {stageMeta}
             </span>
@@ -113,8 +108,8 @@ export default function ConsoleView({ tab, onTabChange, meta, children }) {
         </div>
       )}
 
-      <div ref={body} className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-kumo-base">
-        <div className="mx-auto w-full max-w-3xl pb-10">{children}</div>
+      <div ref={body} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="mx-auto w-full max-w-5xl px-0 pb-10 lg:px-4">{children}</div>
       </div>
     </div>
   );
