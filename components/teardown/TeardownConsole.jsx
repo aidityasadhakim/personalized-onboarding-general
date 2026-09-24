@@ -142,6 +142,17 @@ export default function TeardownConsole({ report, start = "idle" }) {
 
   const timeline = useMemo(() => (run.url ? buildTimeline(report, run.url) : []), [report, run.url]);
 
+  // When a run finishes (or is skipped), leave the log and open the
+  // workflow at its start: Context.
+  const [seenPhase, setSeenPhase] = useState(run.phase);
+  if (run.phase !== seenPhase) {
+    setSeenPhase(run.phase);
+    if (run.phase === "done") {
+      setTab("journey");
+      setFocus(null);
+    }
+  }
+
   // Replay the scripted run one event at a time.
   useEffect(() => {
     if (run.phase !== "running" || run.cursor >= timeline.length) return;
