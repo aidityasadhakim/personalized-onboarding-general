@@ -333,7 +333,7 @@ export default function TeardownConsole({ report, start = "idle" }) {
                   <DataPanel {...panelProps} ready={captureStarted} />
                 </div>
                 <div hidden={tab !== "competitors"}>
-                  <CompetitorsPanel {...panelProps} ready={captureStarted} />
+                  <CompetitorsPanel {...panelProps} ready={captureStarted && tab === "competitors"} />
                 </div>
                 <div hidden={tab !== "analysis"}>
                   <AnalysisPanel {...panelProps} {...ideaProps} focus={tab === "analysis" ? focus : null} />

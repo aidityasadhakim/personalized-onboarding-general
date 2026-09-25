@@ -19,17 +19,15 @@ import { PanelIntro, RoadmapButton } from "../ui";
 
 const dotLabel = (issue) => String(Number(issue.n));
 
-/* One numbered red dot, pinned where the issue shows on the screen. */
-function Dot({ issue, active, onSelect }) {
+/* One numbered red dot, pinned where the issue shows on the screen. Hover
+   highlights its callout; a click opens the issue itself. */
+function Dot({ issue, active, onSelect, onOpen }) {
   return (
     <button
       type="button"
-      onClick={() => {
-        onSelect(issue.id);
-        document.getElementById(`callout-${issue.id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }}
+      onClick={() => onOpen("analysis", issue.id)}
       onMouseEnter={() => onSelect(issue.id)}
-      aria-label={`Issue ${issue.n}: ${issue.title}`}
+      aria-label={`Issue ${issue.n}: ${issue.title}. Open in Issues`}
       className="absolute z-10 -translate-1/2"
       style={{ left: `${issue.spot.x}%`, top: `${issue.spot.y}%` }}
     >
@@ -47,7 +45,7 @@ function Dot({ issue, active, onSelect }) {
 }
 
 /* The captured screen with its issues marked on it. */
-function Screen({ step, issues, active, onSelect, onZoom, large }) {
+function Screen({ step, issues, active, onSelect, onOpen, onZoom, large }) {
   if (!step.image) {
     return (
       <div className="flex aspect-[322/200] w-full flex-col items-center justify-center gap-2 rounded-xl bg-kumo-elevated ring-1 ring-kumo-hairline">
@@ -65,7 +63,7 @@ function Screen({ step, issues, active, onSelect, onZoom, large }) {
         onClick={onZoom}
       />
       {issues.map((issue) => (
-        <Dot key={issue.id} issue={issue} active={active === issue.id} onSelect={onSelect} />
+        <Dot key={issue.id} issue={issue} active={active === issue.id} onSelect={onSelect} onOpen={onOpen} />
       ))}
       {onZoom && (
         <Button
@@ -219,7 +217,7 @@ export default function JourneyPanel({ report, run, focus, onAsk, onOpen, ideas,
       <section className="@container px-5 pt-2 pb-8">
         <div className="grid gap-6 @4xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <div key={step.id} className="rise-in">
-            <Screen step={step} issues={issues} active={active} onSelect={setActive} onZoom={() => setZoom(true)} />
+            <Screen step={step} issues={issues} active={active} onSelect={setActive} onOpen={onOpen} onZoom={() => setZoom(true)} />
             <div className="mt-3 flex items-start gap-3">
               <span className="font-display text-xl leading-6 text-kumo-subtle">{step.step}</span>
               <div className="min-w-0 flex-1">
@@ -286,7 +284,17 @@ export default function JourneyPanel({ report, run, focus, onAsk, onOpen, ideas,
               render={(p) => <Button {...p} variant="ghost" shape="square" size="sm" icon={<XIcon />} aria-label="Close" />}
             />
           </div>
-          <Screen step={step} issues={issues} active={active} onSelect={setActive} large />
+          <Screen
+            step={step}
+            issues={issues}
+            active={active}
+            onSelect={setActive}
+            onOpen={(tab, id) => {
+              setZoom(false);
+              onOpen(tab, id);
+            }}
+            large
+          />
           <Dialog.Description className="mt-3 text-sm text-kumo-subtle">{step.summary}</Dialog.Description>
         </Dialog>
       </Dialog.Root>
