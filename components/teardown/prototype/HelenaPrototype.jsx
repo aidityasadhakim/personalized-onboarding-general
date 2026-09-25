@@ -12,7 +12,7 @@ import {
   HashIcon,
 } from "@phosphor-icons/react";
 import { WindowFrame } from "../ui";
-import { DraftGridGate, ENRICH_BLUE, REASSURANCE, SingleDraftGate } from "./gate";
+import { DraftGridGate, ENRICH_BLUE, MOCKS, MessageGate, REASSURANCE, SingleDraftGate, kindLabel } from "./gate";
 
 /* A clickable replica of Helena's first run, rebuilt the way the teardown
    proposes: gather the need, deliver one real win, then make the ask.
@@ -308,16 +308,22 @@ function ProposedFlow({ data, variant, onStep }) {
 
         {gateShown && (
           <HelenaSays>
-            {variant === "A"
-              ? `Your ${others[0].kind.toLowerCase()} for Enrich Labs is drafted too:`
-              : `While you read, I drafted ${others.length} more for Enrich Labs:`}
-            <div className="mt-2.5">
-              {variant === "A" ? (
-                <SingleDraftGate draft={others[0]} unlocked={unlocked} onReveal={() => go("paywall")} />
-              ) : (
-                <DraftGridGate drafts={others} unlocked={unlocked} onReveal={() => go("paywall")} />
-              )}
-            </div>
+            {variant === "C" ? (
+              <MessageGate draft={others[0]} unlocked={unlocked} onReveal={() => go("paywall")} />
+            ) : (
+              <>
+                {variant === "A"
+                  ? `Your ${kindLabel(others[0].kind)} for Enrich Labs is drafted too:`
+                  : `While you read, I drafted ${others.length} more for Enrich Labs:`}
+                <div className="mt-2.5">
+                  {variant === "A" ? (
+                    <SingleDraftGate draft={others[0]} unlocked={unlocked} onReveal={() => go("paywall")} />
+                  ) : (
+                    <DraftGridGate drafts={others} unlocked={unlocked} onReveal={() => go("paywall")} />
+                  )}
+                </div>
+              </>
+            )}
           </HelenaSays>
         )}
 
@@ -433,9 +439,9 @@ function Note({ note }) {
   );
 }
 
-export default function HelenaPrototype({ data, url, height = 560, className }) {
+export default function HelenaPrototype({ data, url, height = 560, className, initialVariant = "B" }) {
   const [mode, setMode] = useState("proposed");
-  const [variant, setVariant] = useState("B");
+  const [variant, setVariant] = useState(initialVariant);
   const [nonce, setNonce] = useState(0);
   const [step, setStep] = useState("intent");
   const [screen, setScreen] = useState(0);
@@ -474,10 +480,7 @@ export default function HelenaPrototype({ data, url, height = 560, className }) 
               setVariant(v);
               restart();
             }}
-            tabs={[
-              { value: "A", label: "Mock A · one draft" },
-              { value: "B", label: "Mock B · four drafts" },
-            ]}
+            tabs={MOCKS.map((m) => ({ value: m.id, label: `Mock ${m.id} · ${m.name.toLowerCase()}` }))}
           />
         )}
         <Button

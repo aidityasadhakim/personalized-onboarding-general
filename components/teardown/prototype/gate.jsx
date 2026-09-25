@@ -8,6 +8,16 @@ import { LockSimpleIcon } from "@phosphor-icons/react";
 export const ENRICH_BLUE = "#1f6feb";
 export const REASSURANCE = "Free for 3 days · cancel anytime · keep everything you create";
 
+/* A draft kind mid-sentence: “your LinkedIn post”, “your blog intro”. */
+export const kindLabel = (kind) => (/^(LinkedIn|Instagram)\b/.test(kind) ? kind : kind.toLowerCase());
+
+/* The three EC-01 mockups the expert sends back. */
+export const MOCKS = [
+  { id: "A", name: "One draft", caption: "The email stays whole; the next draft is gated below its first line.", recommended: true },
+  { id: "B", name: "Four drafts", caption: "A counted draft grid proves quantity; one reveal opens all four." },
+  { id: "C", name: "In the message", caption: "The gate lives inside Helena's message: a quoted opening, then the reveal." },
+];
+
 function BlurredLines({ lines = 3, unlocked, text }) {
   if (unlocked && text) return <p className="mt-1.5 text-[13px] leading-relaxed text-[#3d3a4d]">{text}</p>;
   return (
@@ -23,15 +33,20 @@ function GateCta({ label, onClick, disabled }) {
   return (
     <div className="mt-4 flex flex-col items-center gap-2">
       <LockSimpleIcon size={16} weight="fill" className="text-[#b9b4c8]" />
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        className="rounded-lg px-4 py-2 text-[13px] font-medium text-white enabled:hover:brightness-110 disabled:cursor-default"
-        style={{ background: ENRICH_BLUE }}
-      >
-        {label}
-      </button>
+      {disabled ? (
+        <span className="rounded-lg px-4 py-2 text-[13px] font-medium text-white" style={{ background: ENRICH_BLUE }}>
+          {label}
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={onClick}
+          className="rounded-lg px-4 py-2 text-[13px] font-medium text-white hover:brightness-110"
+          style={{ background: ENRICH_BLUE }}
+        >
+          {label}
+        </button>
+      )}
       <span className="text-[11px] text-[#8c88a0]">{REASSURANCE}</span>
     </div>
   );
@@ -44,7 +59,7 @@ export function SingleDraftGate({ draft, unlocked, onReveal, interactive = true 
       <p className="text-[13px] font-semibold text-[#1d1a33]">{draft.kind} · Enrich Labs</p>
       <p className="mt-1 text-[13px] text-[#3d3a4d]">{draft.line}</p>
       <BlurredLines lines={4} unlocked={unlocked} text={draft.more} />
-      {!unlocked && <GateCta label={`See your full ${draft.kind.toLowerCase()}`} onClick={onReveal} disabled={!interactive} />}
+      {!unlocked && <GateCta label={`See your full ${kindLabel(draft.kind)}`} onClick={onReveal} disabled={!interactive} />}
     </div>
   );
 }
@@ -66,6 +81,20 @@ export function DraftGridGate({ drafts, unlocked, onReveal, interactive = true }
         ))}
       </div>
       {!unlocked && <GateCta label={`See all ${drafts.length} drafts`} onClick={onReveal} disabled={!interactive} />}
+    </div>
+  );
+}
+
+/* Mock C: the gate lives inside Helena's message. A quoted opening line, the
+   rest blurred, then the reveal. */
+export function MessageGate({ draft, unlocked, onReveal, interactive = true }) {
+  return (
+    <div>
+      <p className="text-[13px] text-[#3d3a4d]">
+        Your {kindLabel(draft.kind)} opens with: <span className="font-medium text-[#1d1a33]">“{draft.line}”</span>
+      </p>
+      <BlurredLines lines={3} unlocked={unlocked} text={draft.more} />
+      {!unlocked && <GateCta label={`See the rest of your ${kindLabel(draft.kind)}`} onClick={onReveal} disabled={!interactive} />}
     </div>
   );
 }

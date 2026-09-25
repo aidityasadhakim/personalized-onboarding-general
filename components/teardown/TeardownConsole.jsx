@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { Badge, Button, DropdownMenu, Toasty, TooltipProvider } from "@cloudflare/kumo";
-import { CaretDownIcon, ChatCircleIcon, CheckIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
+import { Badge, Button, DropdownMenu, Toasty, TooltipProvider, cn } from "@cloudflare/kumo";
+import { CaretDownIcon, ChatCircleIcon, CheckIcon, PlusIcon, SidebarSimpleIcon, XIcon } from "@phosphor-icons/react";
 import { applyEvent, buildTimeline, completedState, initialRunState, messageId } from "@/lib/teardown/timeline";
 import { replyTo, suggestionsFor } from "@/lib/teardown/replies";
-import { Wordmark } from "./ui";
+import { initialIdeas } from "@/lib/teardown/roadmap";
+import { Mark, Wordmark } from "./ui";
 import Sidebar, { SIDEBAR_DEFAULT } from "./Sidebar";
 import ConsoleView from "./ConsoleView";
 import Chat from "./chat/Chat";
@@ -16,7 +17,7 @@ import DataPanel from "./panels/DataPanel";
 import CompetitorsPanel from "./panels/CompetitorsPanel";
 import AnalysisPanel from "./panels/AnalysisPanel";
 import IdeasPanel from "./panels/IdeasPanel";
-import SetupPanel from "./panels/SetupPanel";
+import MockupsPanel from "./panels/MockupsPanel";
 import OnboardingPanel from "./panels/OnboardingPanel";
 import WorkflowPanel from "./panels/WorkflowPanel";
 
@@ -84,7 +85,7 @@ function Header() {
   );
 }
 
-function ChatHeader({ report, onRestart, mobile, onClose }) {
+function ChatHeader({ report, onRestart, mobile, onClose, onCollapse }) {
   return (
     <div className="flex h-14 shrink-0 items-center gap-2 px-4">
       <Link href="/" className="shrink-0" onClick={onRestart} aria-label="Funnel OS home">
@@ -109,7 +110,7 @@ function ChatHeader({ report, onRestart, mobile, onClose }) {
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu>
-      {mobile && (
+      {mobile ? (
         <Button
           variant="ghost"
           size="sm"
@@ -118,6 +119,17 @@ function ChatHeader({ report, onRestart, mobile, onClose }) {
           icon={<XIcon size={16} />}
           aria-label="Back to the console"
           onClick={onClose}
+        />
+      ) : (
+        <Button
+          variant="ghost"
+          size="sm"
+          shape="square"
+          className="ml-auto"
+          icon={<SidebarSimpleIcon size={18} />}
+          aria-label="Collapse chat"
+          title="Collapse chat"
+          onClick={onCollapse}
         />
       )}
     </div>
@@ -129,13 +141,15 @@ export default function TeardownConsole({ report, start = "idle" }) {
     start === "done" ? completedState(report) : initialRunState(),
   );
   const [tab, setTab] = useState(start === "done" ? "journey" : "workflow");
-  // Roadmap order and card statuses, shared by the Roadmap and Setup views.
-  const [ideas, setIdeas] = useState(() => ({
-    order: report.ideas.map((i) => i.id),
-    statuses: Object.fromEntries(report.ideas.map((i) => [i.id, i.status])),
-  }));
+  // The roadmap: which cards are on it, their order, status, and mockups.
+  // Shared by Journey, Issues, Roadmap, and Mockups.
+  const [ideas, setIdeas] = useState(() => initialIdeas(report));
+  // The mockup picked under Test › Mockups; Preview plays it.
+  const [mock, setMock] = useState("A");
   const [focus, setFocus] = useState(null);
   const [width, setWidth] = useState(SIDEBAR_DEFAULT);
+  // On desktop the chat can fold away, like ChatGPT's sidebar.
+  const [chatOpen, setChatOpen] = useState(true);
   // Phones show one surface at a time; the chat opens as a sheet.
   const [mobileChat, setMobileChat] = useState(false);
   const [pending, setPending] = useState(false);
@@ -199,6 +213,8 @@ export default function TeardownConsole({ report, start = "idle" }) {
     clearTimeout(replyTimer.current);
     setPending(false);
     dispatch({ type: "reset" });
+    setIdeas(initialIdeas(report));
+    setMock("A");
     setTab("workflow");
     setFocus(null);
     setMobileChat(false);
@@ -206,6 +222,7 @@ export default function TeardownConsole({ report, start = "idle" }) {
 
   const panelProps = { report, run, focus, onOpen: openTab, onAsk: send, onRestart: restart };
   const ideaProps = { ideas, onIdeasChange: setIdeas };
+  const chatHidden = isMobile ? !mobileChat : !chatOpen;
   const captureStarted = run.captured.length > 0;
 
   if (run.phase === "idle") {
@@ -235,11 +252,19 @@ export default function TeardownConsole({ report, start = "idle" }) {
       <TooltipProvider>
         <div className="flex h-dvh bg-kumo-canvas">
           <Sidebar
-            hidden={isMobile && !mobileChat}
+            hidden={chatHidden}
             width={width}
             onWidthChange={setWidth}
             mobile={isMobile}
-            header={<ChatHeader report={report} onRestart={restart} mobile={isMobile} onClose={() => setMobileChat(false)} />}
+            header={
+              <ChatHeader
+                report={report}
+                onRestart={restart}
+                mobile={isMobile}
+                onClose={() => setMobileChat(false)}
+                onCollapse={() => setChatOpen(false)}
+              />
+            }
           >
             <Chat
               report={report}
@@ -255,11 +280,29 @@ export default function TeardownConsole({ report, start = "idle" }) {
 
           {/* The console is the main surface: an inset pane beside the chat,
               like the preview in AI Studio or Lovable. */}
-          <main className="min-w-0 flex-1 md:py-2 md:pr-2">
+          <main className={cn("min-w-0 flex-1 md:py-2 md:pr-2", !chatOpen && "md:pl-2")}>
             <div className="h-full overflow-hidden bg-kumo-base md:rounded-xl md:shadow-[0_1px_2px_rgb(40_30_20/0.05)] md:ring-1 md:ring-kumo-hairline">
               <ConsoleView
                 tab={tab}
                 meta={stageMeta(report, run)}
+                leading={
+                  !isMobile &&
+                  !chatOpen && (
+                    <span className="flex shrink-0 items-center gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        shape="square"
+                        icon={<SidebarSimpleIcon size={18} />}
+                        aria-label="Open chat"
+                        title="Open chat"
+                        onClick={() => setChatOpen(true)}
+                      />
+                      <Mark className="size-5" />
+                      <span className="mr-1 h-5 w-px bg-kumo-line" aria-hidden="true" />
+                    </span>
+                  )
+                }
                 onTabChange={(t) => {
                   setTab(t);
                   setFocus(null);
@@ -284,7 +327,7 @@ export default function TeardownConsole({ report, start = "idle" }) {
                 {/* Panels stay mounted so decisions (approvals, sources, wins)
                     survive switching views; only the active one is visible. */}
                 <div hidden={tab !== "journey"}>
-                  <JourneyPanel {...panelProps} focus={tab === "journey" ? focus : null} />
+                  <JourneyPanel {...panelProps} {...ideaProps} focus={tab === "journey" ? focus : null} />
                 </div>
                 <div hidden={tab !== "data"}>
                   <DataPanel {...panelProps} ready={captureStarted} />
@@ -293,16 +336,16 @@ export default function TeardownConsole({ report, start = "idle" }) {
                   <CompetitorsPanel {...panelProps} ready={captureStarted} />
                 </div>
                 <div hidden={tab !== "analysis"}>
-                  <AnalysisPanel {...panelProps} focus={tab === "analysis" ? focus : null} />
+                  <AnalysisPanel {...panelProps} {...ideaProps} focus={tab === "analysis" ? focus : null} />
                 </div>
                 <div hidden={tab !== "ideas"}>
                   <IdeasPanel {...panelProps} {...ideaProps} />
                 </div>
                 <div hidden={tab !== "setup"}>
-                  <SetupPanel {...panelProps} {...ideaProps} />
+                  <MockupsPanel {...panelProps} {...ideaProps} mock={mock} onMockChange={setMock} />
                 </div>
                 <div hidden={tab !== "onboarding"}>
-                  <OnboardingPanel {...panelProps} />
+                  <OnboardingPanel {...panelProps} mock={mock} />
                 </div>
                 <div hidden={tab !== "workflow"}>
                   <WorkflowPanel {...panelProps} />

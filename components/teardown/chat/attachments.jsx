@@ -119,10 +119,10 @@ function Idea({ report, id, onOpen }) {
       <p className="font-mono text-xs text-kumo-subtle">{idea.id}</p>
       <p className="mt-1 text-sm font-medium text-kumo-strong">{idea.title}</p>
       <p className="text-xs text-kumo-subtle">
-        From {idea.from} · score {idea.score} · 3 mockups · run-length estimate
+        From {idea.from} · score {idea.score}
       </p>
       <div className="mt-2 flex justify-end">
-        <OpenButton onClick={() => onOpen("setup", idea.id)}>Open card</OpenButton>
+        <OpenButton onClick={() => onOpen("ideas", idea.id)}>Open roadmap</OpenButton>
       </div>
     </Card>
   );

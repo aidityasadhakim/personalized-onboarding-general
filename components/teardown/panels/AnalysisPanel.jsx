@@ -4,8 +4,8 @@
 
 import { useEffect, useState } from "react";
 import { Badge, Button, Collapsible, Empty, LayerCard, Loader, Meter, Table } from "@cloudflare/kumo";
-import { ChartLineUpIcon, ChatCircleIcon, SealCheckIcon } from "@phosphor-icons/react";
-import { PanelIntro, PanelSection } from "../ui";
+import { ChartLineUpIcon, ChatCircleIcon, LightbulbIcon, SealCheckIcon } from "@phosphor-icons/react";
+import { PanelIntro, PanelSection, RoadmapButton } from "../ui";
 import { toneClass } from "../chat/attachments";
 
 function Upside({ upside }) {
@@ -44,7 +44,7 @@ function Upside({ upside }) {
   );
 }
 
-export default function AnalysisPanel({ report, run, focus, onAsk }) {
+export default function AnalysisPanel({ report, run, focus, onAsk, onOpen, ideas, onIdeasChange }) {
   const status = run.stages.analysis;
   const [open, setOpen] = useState({ "issue-01": true });
   const [openedFor, setOpenedFor] = useState(null);
@@ -81,6 +81,57 @@ export default function AnalysisPanel({ report, run, focus, onAsk }) {
         {report.opportunity}
       </PanelIntro>
 
+      <PanelSection title={`Issues · ${report.issues.length}`}>
+        <div className="flex flex-col gap-2.5">
+          {report.issues.map((issue) => (
+            <div key={issue.id} id={`analysis-${issue.id}`} className="scroll-mt-4 rounded-xl ring-1 ring-kumo-hairline">
+              <Collapsible.Root
+                open={!!open[issue.id]}
+                onOpenChange={(o) => setOpen((prev) => ({ ...prev, [issue.id]: o }))}
+              >
+                <Collapsible.Trigger className="flex w-full items-start gap-3 p-4 text-left">
+                  <span className="font-display text-xl leading-6 text-ember">{issue.n}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium text-kumo-strong">{issue.title}</span>
+                    <span className="mt-1 flex items-center gap-1.5">
+                      <Badge variant="neutral">{issue.stage}</Badge>
+                      {ideas.order.includes(issue.idea) && <Badge variant="info">On roadmap</Badge>}
+                      <span className="text-xs text-kumo-subtle">{issue.status}</span>
+                    </span>
+                  </span>
+                </Collapsible.Trigger>
+                <Collapsible.Panel className="px-4 pb-4">
+                  <img src={issue.image} alt={`Evidence for issue ${issue.n}`} className="w-full rounded-lg ring-1 ring-kumo-hairline" />
+                  <p className="mt-3 text-sm leading-relaxed text-kumo-default">{issue.body}</p>
+                  <div className="mt-3 rounded-lg bg-ok-tint px-3.5 py-3 text-ok">
+                    <p className="flex items-center gap-1.5 text-sm font-medium">
+                      <LightbulbIcon size={15} weight="fill" /> Solution
+                    </p>
+                    <p className="mt-1 text-sm">{issue.fix}</p>
+                    {issue.solution && (
+                      <ol className="mt-2 flex flex-col gap-1 text-sm text-kumo-default">
+                        {issue.solution.map((s, i) => (
+                          <li key={s} className="flex gap-2">
+                            <span className="w-3 shrink-0 font-display text-ok">{i + 1}</span>
+                            {s}
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <RoadmapButton report={report} issue={issue} ideas={ideas} onIdeasChange={onIdeasChange} onOpen={onOpen} />
+                    <Button variant="ghost" size="xs" icon={<ChatCircleIcon size={13} />} onClick={() => onAsk(`Explain Issue ${issue.n}`)}>
+                      Ask about this
+                    </Button>
+                  </div>
+                </Collapsible.Panel>
+              </Collapsible.Root>
+            </div>
+          ))}
+        </div>
+      </PanelSection>
+
       <PanelSection title="Funnel score">
         <div className="flex flex-col gap-5">
           {report.funnel.map((f) => (
@@ -102,46 +153,6 @@ export default function AnalysisPanel({ report, run, focus, onAsk }) {
               <p className="mt-1 text-sm leading-relaxed text-kumo-subtle">{report.strength.body}</p>
             </div>
           </div>
-        </div>
-      </PanelSection>
-
-      <PanelSection title={`Issues · ${report.issues.length}`}>
-        <div className="flex flex-col gap-2.5">
-          {report.issues.map((issue) => (
-            <div key={issue.id} id={`analysis-${issue.id}`} className="scroll-mt-4 rounded-xl ring-1 ring-kumo-hairline">
-              <Collapsible.Root
-                open={!!open[issue.id]}
-                onOpenChange={(o) => setOpen((prev) => ({ ...prev, [issue.id]: o }))}
-              >
-                <Collapsible.Trigger className="flex w-full items-start gap-3 p-4 text-left">
-                  <span className="font-display text-xl leading-6 text-ember">{issue.n}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium text-kumo-strong">{issue.title}</span>
-                    <span className="mt-1 flex items-center gap-1.5">
-                      <Badge variant="neutral">{issue.stage}</Badge>
-                      <span className="text-xs text-kumo-subtle">{issue.status}</span>
-                    </span>
-                  </span>
-                </Collapsible.Trigger>
-                <Collapsible.Panel className="px-4 pb-4">
-                  <img src={issue.image} alt={`Evidence for issue ${issue.n}`} className="w-full rounded-lg ring-1 ring-kumo-hairline" />
-                  <p className="mt-3 text-sm leading-relaxed text-kumo-default">{issue.body}</p>
-                  <p className="mt-2 rounded-lg bg-ok-tint px-3 py-2 text-sm text-ok">
-                    <span className="font-medium">Fix:</span> {issue.fix}
-                  </p>
-                  <Button
-                    className="mt-3"
-                    variant="ghost"
-                    size="xs"
-                    icon={<ChatCircleIcon size={13} />}
-                    onClick={() => onAsk(`Explain Issue ${issue.n}`)}
-                  >
-                    Ask about this
-                  </Button>
-                </Collapsible.Panel>
-              </Collapsible.Root>
-            </div>
-          ))}
         </div>
       </PanelSection>
 
@@ -172,7 +183,7 @@ export default function AnalysisPanel({ report, run, focus, onAsk }) {
         </LayerCard>
       </PanelSection>
 
-      <PanelSection title="Roadmap">
+      <PanelSection title="Suggested sequence">
         <div className="flex flex-col gap-5">
           {report.roadmap.map((g) => (
             <div key={g.group}>

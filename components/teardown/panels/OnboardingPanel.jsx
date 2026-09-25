@@ -5,7 +5,7 @@ import { ArrowsOutSimpleIcon, LinkSimpleIcon, SparkleIcon } from "@phosphor-icon
 import { PanelIntro } from "../ui";
 import HelenaPrototype from "../prototype/HelenaPrototype";
 
-export default function OnboardingPanel({ report, run }) {
+export default function OnboardingPanel({ report, run, mock, onOpen }) {
   const toasts = useKumoToastManager();
   const stage = run.stages.onboarding;
   const shareUrl = `/teardown/${report.slug}/prototype`;
@@ -33,8 +33,11 @@ export default function OnboardingPanel({ report, run }) {
   return (
     <>
       <PanelIntro title={<>A first run built for <em>{report.profile.name}</em></>}>
-        Gather the need, deliver one real win, then ask. Pick an intent and click through. Generated from{" "}
-        {report.library.matched} matched experiments in the library.
+        Gather the need, deliver one real win, then ask. Built from{" "}
+        <button type="button" onClick={() => onOpen("setup")} className="font-medium text-kumo-strong underline-offset-2 hover:underline">
+          Mock {mock}
+        </button>
+        . Pick an intent and click through.
       </PanelIntro>
       <div className="flex flex-wrap gap-2 px-5 pb-4">
         <Button
@@ -50,7 +53,7 @@ export default function OnboardingPanel({ report, run }) {
         </Button>
       </div>
       <div className="px-5 pb-8">
-        <HelenaPrototype data={report.firstRun} url={report.url} />
+        <HelenaPrototype key={mock} data={report.firstRun} url={report.url} initialVariant={mock} />
       </div>
     </>
   );

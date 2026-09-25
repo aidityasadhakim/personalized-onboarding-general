@@ -7,12 +7,12 @@ import {
   ChartLineUpIcon,
   ClockCounterClockwiseIcon,
   DatabaseIcon,
-  FlaskIcon,
+  EyeIcon,
   FlowArrowIcon,
+  ImagesIcon,
   LightbulbIcon,
   ListNumbersIcon,
   RocketLaunchIcon,
-  SparkleIcon,
   StackIcon,
   UsersThreeIcon,
 } from "@phosphor-icons/react";
@@ -25,16 +25,16 @@ export const CONSOLE_TABS = [
   { value: "competitors", label: "Competitors", icon: UsersThreeIcon },
   { value: "analysis", label: "Issues", icon: ChartLineUpIcon },
   { value: "ideas", label: "Roadmap", icon: ListNumbersIcon },
-  { value: "setup", label: "Setup", icon: FlaskIcon },
-  { value: "onboarding", label: "Prototype", icon: SparkleIcon },
+  { value: "setup", label: "Mockups", icon: ImagesIcon },
+  { value: "onboarding", label: "Preview", icon: EyeIcon },
   { value: "workflow", label: "Workflow", icon: FlowArrowIcon },
 ];
 
 /* The views grouped into the growth workflow a solo PM runs: build the
-   context, turn issues into a ranked roadmap, then set up and launch a test.
+   context, turn issues into a ranked roadmap, then pick a mockup and test it.
    Workflow is the run log, so it sits last. */
 export const CONSOLE_STAGES = [
-  { value: "context", label: "Context", icon: StackIcon, tabs: ["journey", "data", "competitors"] },
+  { value: "context", label: "Context", icon: StackIcon, tabs: ["journey", "competitors", "data"] },
   { value: "ideas", label: "Issues & ideas", icon: LightbulbIcon, tabs: ["analysis", "ideas"] },
   { value: "test", label: "Test", icon: RocketLaunchIcon, tabs: ["setup", "onboarding"] },
   { value: "workflow", label: "Workflow", icon: FlowArrowIcon, tabs: ["workflow"] },
@@ -43,7 +43,7 @@ export const CONSOLE_STAGES = [
 const stageOf = (tab) => CONSOLE_STAGES.find((s) => s.tabs.includes(tab)) ?? CONSOLE_STAGES[0];
 
 /* The main surface: stage tabs, the stage's views, and the active panel. */
-export default function ConsoleView({ tab, onTabChange, meta, actions, children }) {
+export default function ConsoleView({ tab, onTabChange, meta, leading, actions, children }) {
   const body = useRef(null);
   const stage = stageOf(tab);
   // The view last open in each stage, so switching stages comes back to it.
@@ -82,6 +82,7 @@ export default function ConsoleView({ tab, onTabChange, meta, actions, children 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center gap-3 border-b border-kumo-hairline px-3 sm:px-4">
+        {leading}
         <Tabs
           variant="underline"
           size="sm"

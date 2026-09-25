@@ -1,7 +1,8 @@
 "use client";
 
-import { cn } from "@cloudflare/kumo";
-import { CheckIcon } from "@phosphor-icons/react";
+import { Button, cn, useKumoToastManager } from "@cloudflare/kumo";
+import { CheckIcon, PlusIcon } from "@phosphor-icons/react";
+import { withIdea } from "@/lib/teardown/roadmap";
 
 /* Small shared pieces. Kumo supplies the controls; these keep panel rhythm
    and the editorial type consistent across the console. */
@@ -68,15 +69,41 @@ export function StageIcon({ status }) {
   return <span className="size-5 shrink-0 rounded-full border-[1.5px] border-dashed border-kumo-line" />;
 }
 
-/* Idea card statuses, shared by the roadmap and the test setup. */
+/* Idea card statuses, shared by the roadmap and the mockups. */
 export const IDEA_STATUS = {
+  planned: { label: "Planned", variant: "neutral" },
   shipped: { label: "Shipped", variant: "success" },
-  review: { label: "In review", variant: "warning" },
-  drafted: { label: "Drafted", variant: "neutral" },
   launched: { label: "Launched", variant: "success" },
-  revising: { label: "Revising", variant: "info" },
-  passed: { label: "Passed", variant: "neutral" },
 };
+
+/* Puts an issue's idea card on the roadmap, or opens it once it's there.
+   Shared by the journey and the issues list. */
+export function RoadmapButton({ report, issue, ideas, onIdeasChange, onOpen, className }) {
+  const toasts = useKumoToastManager();
+  const idea = report.ideas.find((i) => i.id === issue.idea);
+  if (!idea) return null;
+  if (ideas.order.includes(idea.id)) {
+    return (
+      <Button size="xs" variant="ghost" className={className} icon={<CheckIcon size={12} />} onClick={() => onOpen("ideas", idea.id)}>
+        On roadmap
+      </Button>
+    );
+  }
+  return (
+    <Button
+      size="xs"
+      variant="secondary"
+      className={className}
+      icon={<PlusIcon size={12} />}
+      onClick={() => {
+        onIdeasChange((s) => withIdea(s, idea.id));
+        toasts.add({ title: "Added to the roadmap", description: `${idea.id} · ${idea.title}`, variant: "success" });
+      }}
+    >
+      Add to roadmap
+    </Button>
+  );
+}
 
 /* A browser-style frame for captured screens and prototypes. */
 export function WindowFrame({ title, children, className, bodyClassName }) {
